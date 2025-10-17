@@ -1,3 +1,82 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "service-content",
+      "description": "Abstract image representing content creation",
+      "imageUrl": "https://picsum.photos/seed/service1/600/400",
+      "imageHint": "creative content"
+    },
+    {
+      "id": "service-ads",
+      "description": "Abstract image representing digital advertising",
+      "imageUrl": "https://picsum.photos/seed/service2/600/400",
+      "imageHint": "digital ads"
+    },
+    {
+      "id": "service-strategy",
+      "description": "Abstract image representing brand strategy",
+      "imageUrl": "https://picsum.photos/seed/service3/600/400",
+      "imageHint": "strategy chart"
+    },
+    {
+      "id": "service-products",
+      "description": "Abstract image representing digital products",
+      "imageUrl": "https://picsum.photos/seed/service4/600/400",
+      "imageHint": "digital product"
+    },
+    {
+      "id": "team-hengki",
+      "description": "Profile picture of Hengki",
+      "imageUrl": "https://picsum.photos/seed/hengki/400/400",
+      "imageHint": "male professional"
+    },
+    {
+      "id": "team-taufik",
+      "description": "Profile picture of Taufik",
+      "imageUrl": "https://picsum.photos/seed/taufik/400/400",
+      "imageHint": "male creative"
+    },
+    {
+      "id": "team-zulfadly",
+      "description": "Profile picture of Zulfadly",
+      "imageUrl": "https://picsum.photos/seed/zulfadly/400/400",
+      "imageHint": "male analyst"
+    },
+    {
+      "id": "portfolio-1",
+      "description": "Portfolio item 1",
+      "imageUrl": "https://picsum.photos/seed/p1/600/400",
+      "imageHint": "fashion campaign"
+    },
+    {
+      "id": "portfolio-2",
+      "description": "Portfolio item 2",
+      "imageUrl": "https://picsum.photos/seed/p2/600/400",
+      "imageHint": "food photography"
+    },
+    {
+      "id": "portfolio-3",
+      "description": "Portfolio item 3",
+      "imageUrl": "https://picsum.photos/seed/p3/600/400",
+      "imageHint": "social media"
+    },
+    {
+      "id": "portfolio-4",
+      "description": "Portfolio item 4",
+      "imageUrl": "https://picsum.photos/seed/p4/600/400",
+      "imageHint": "product launch"
+    },
+    {
+      "id": "portfolio-5",
+      "description": "Portfolio item 5",
+      "imageUrl": "https://picsum.photos/seed/p5/600/400",
+      "imageHint": "app interface"
+    },
+    {
+      "id": "portfolio-6",
+      "description": "Portfolio item 6",
+      "imageUrl": "https://picsum.photos/seed/p6/600/400",
+      "imageHint": "brand identity"
+    }
+  ]
 }
