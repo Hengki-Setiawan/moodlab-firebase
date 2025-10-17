@@ -30,9 +30,9 @@ export default function Home() {
             <div className="max-w-4xl mx-auto">
               <h1 className="font-headline text-4xl md:text-5xl lg:text-6xl font-bold tracking-tighter mb-4">
                 <span className="bg-gradient-to-r from-gradient-blue via-gradient-purple to-gradient-pink text-transparent bg-clip-text">
-                  Mood yang Tepat
+                  mood up
                 </span>
-                , Merek yang Kuat.
+                , brand up.
               </h1>
               <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
                 Kami membantu UMKM kekinian membangun koneksi otentik dengan Gen
