@@ -65,7 +65,7 @@ export function ContactForm() {
       } else if (state.message.startsWith('Error')) {
         toast({
           title: "Gagal Mengirim",
-          description: "Terjadi kesalahan. Silakan periksa kembali isian Anda.",
+          description: state.message,
           variant: 'destructive',
         });
       }
