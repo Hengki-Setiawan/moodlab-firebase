@@ -123,6 +123,46 @@
         "bio",
         "imageUrl"
       ]
+    },
+    "Product": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Product",
+      "type": "object",
+      "description": "Represents a digital product for sale.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the product."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the product."
+        },
+        "description": {
+          "type": "string",
+          "description": "A detailed description of the product."
+        },
+        "price": {
+          "type": "number",
+          "description": "The price of the product."
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "URL to the product's image.",
+          "format": "uri"
+        },
+        "fileUrl": {
+          "type": "string",
+          "description": "URL to the downloadable file (e.g., Google Drive link).",
+          "format": "uri"
+        },
+        "category": {
+          "type": "string",
+          "description": "The category of the digital product.",
+          "enum": ["E-book", "Template", "SFX", "Green Screen"]
+        }
+      },
+      "required": ["id", "name", "description", "price", "imageUrl", "fileUrl", "category"]
     }
   },
   "auth": {
@@ -180,8 +220,24 @@
             }
           ]
         }
+      },
+      {
+        "path": "/products/{productId}",
+        "definition": {
+          "entityName": "Product",
+          "schema": {
+            "$ref": "#/backend/entities/Product"
+          },
+          "description": "Stores digital product data.",
+          "params": [
+            {
+              "name": "productId",
+              "description": "The unique identifier for the product."
+            }
+          ]
+        }
       }
     ],
-    "reasoning": "The Firestore structure is designed to manage content for the Mood Lab website, focusing on projects, contact submissions, and team members. The structure prioritizes simplicity and security, leveraging Structural Segregation and Path-Based ownership. \n\n*   `/projects`: Stores project data. This collection is flat, as there are no specific ownership requirements. All project documents share the same security posture.\n*   `/contactSubmissions`: Stores contact form submissions.  Like Projects, this is a flat collection since there's no specified hierarchical authorization.\n*   `/teamMembers`: Stores team member data.  This is also a flat collection.\n\nAuthorization Independence: The structure does not require denormalization, as authorization is not based on hierarchical data. Instead, access is controlled at the collection level.\n\nQAPs:  Segregation is used to support QAPs. Each collection (`projects`, `contactSubmissions`, `teamMembers`) has its own security rules tailored to the data it contains, ensuring that list operations can be securely performed without exposing unauthorized information."
+    "reasoning": "The Firestore structure is designed to manage content for the Mood Lab website, focusing on projects, contact submissions, and team members. The structure prioritizes simplicity and security, leveraging Structural Segregation and Path-Based ownership. A new 'products' collection has been added to store digital product information. \n\n*   `/projects`: Stores project data. This collection is flat, as there are no specific ownership requirements. All project documents share the same security posture.\n*   `/contactSubmissions`: Stores contact form submissions.  Like Projects, this is a flat collection since there's no specified hierarchical authorization.\n*   `/teamMembers`: Stores team member data.  This is also a flat collection.\n*   `/products`: Stores digital product data. This is a flat collection for easy querying of all available products.\n\nAuthorization Independence: The structure does not require denormalization, as authorization is not based on hierarchical data. Instead, access is controlled at the collection level.\n\nQAPs:  Segregation is used to support QAPs. Each collection (`projects`, `contactSubmissions`, `teamMembers`, `products`) has its own security rules tailored to the data it contains, ensuring that list operations can be securely performed without exposing unauthorized information."
   }
 }

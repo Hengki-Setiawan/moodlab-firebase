@@ -13,6 +13,17 @@ export type Service = {
   image: string;
 };
 
+export type Product = {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  imageUrl: string;
+  imageHint: string;
+  fileUrl: string; // This will hold the Google Drive link
+  category: 'E-book' | 'Template' | 'SFX' | 'Green Screen';
+};
+
 export type Project = {
   client: string;
   title: string;

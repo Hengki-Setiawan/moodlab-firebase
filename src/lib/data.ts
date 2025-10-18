@@ -4,7 +4,7 @@ import { Video, Megaphone, Lightbulb, ShoppingCart, Bot, Zap, HeartHandshake, Se
 export const navItems: NavItem[] = [
   { label: 'Home', href: '/' },
   { label: 'Tentang Kami', href: '/tentang-kami' },
-  { label: 'Layanan', href: '/layanan' },
+  { label: 'Produk Digital', href: '/produk' },
   { label: 'Portofolio', href: '/portofolio' },
   { label: 'Kontak', href: '/kontak' },
 ];
