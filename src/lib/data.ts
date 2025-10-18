@@ -1,4 +1,4 @@
-import type { NavItem, Service, Project, TeamMember, Value } from './types';
+import type { NavItem, Service, Project, TeamMember, Value, Product } from './types';
 import { Video, Megaphone, Lightbulb, ShoppingCart, Bot, Zap, HeartHandshake, Search } from 'lucide-react';
 
 export const navItems: NavItem[] = [
@@ -39,6 +39,50 @@ export const services: Service[] = [
     image: 'service-products'
   },
 ];
+
+export const dummyProducts: Product[] = [
+    {
+      id: 'prod_1',
+      name: 'E-book: Rahasia Konten Viral',
+      description: 'Panduan lengkap untuk membuat konten yang disukai dan dibagikan oleh jutaan orang. Pelajari psikologi di balik viralitas.',
+      price: 75000,
+      imageUrl: 'https://picsum.photos/seed/ebook1/600/400',
+      imageHint: 'book cover marketing',
+      fileUrl: '#', 
+      category: 'E-book',
+    },
+    {
+      id: 'prod_2',
+      name: '100+ Template Canva Kekinian',
+      description: 'Paket template premium untuk Instagram Stories, Feeds, dan Reels. Desain profesional tanpa perlu jadi desainer.',
+      price: 125000,
+      imageUrl: 'https://picsum.photos/seed/template1/600/400',
+      imageHint: 'design template social media',
+      fileUrl: '#',
+      category: 'Template',
+    },
+    {
+      id: 'prod_3',
+      name: 'Paket SFX untuk Konten Video',
+      description: 'Koleksi sound effects (SFX) yang sering digunakan oleh content creator populer untuk video yang lebih engaging.',
+      price: 99000,
+      imageUrl: 'https://picsum.photos/seed/sfx1/600/400',
+      imageHint: 'sound waves audio',
+      fileUrl: '#',
+      category: 'SFX',
+    },
+    {
+        id: 'prod_4',
+        name: 'Green Screen Pack Vol. 1',
+        description: 'Berbagai macam aset green screen untuk kebutuhan editing video Anda. Efek meme, transisi, dan banyak lagi.',
+        price: 89000,
+        imageUrl: 'https://picsum.photos/seed/greenscreen1/600/400',
+        imageHint: 'green screen video editing',
+        fileUrl: '#',
+        category: 'Green Screen',
+    }
+];
+
 
 export const projects: Project[] = [
   {
