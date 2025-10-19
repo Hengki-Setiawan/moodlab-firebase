@@ -82,7 +82,7 @@ export default function PortfolioPage() {
             <div className="text-center col-span-full py-12 border rounded-lg bg-destructive/10 border-destructive">
                 <h3 className="text-xl font-semibold text-destructive-foreground">Akses Database Gagal</h3>
                 <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">
-                    Terjadi kesalahan saat memuat data portofolio. Pastikan aturan keamanan Firestore Anda telah benar dan coba lagi.
+                    Terjadi kesalahan saat memuat data portofolio. Pastikan aturan keamanan Firestore Anda telah benar dan koleksi 'projects' ada di database Anda.
                 </p>
                 <p className="text-xs text-muted-foreground mt-4">{error.message}</p>
             </div>
