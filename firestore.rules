@@ -1,113 +1,37 @@
-/**
- * @fileoverview Firestore Security Rules for Mood Lab Website
- *
- * Core Philosophy:
- * This ruleset enforces role-based access control for managing website content.
- * Public read access is granted for project and team member information, while
- * administrative privileges are required for managing contact submissions and
- * modifying project and team member data.
- *
- * Data Structure:
- * - /projects/{projectId}: Stores project details. Publicly readable, admin-only write.
- * - /contactSubmissions/{contactSubmissionId}: Stores contact form submissions. Admin-only read and write.
- * - /teamMembers/{teamMemberId}: Stores team member profiles. Publicly readable, admin-only write.
- * - /roles_admin/{userId}: Indicates admin status. Document existence grants admin rights.
- *
- * Key Security Decisions:
- * - Public listing is enabled for projects and team members, as this data is intended to be publicly visible.
- * - Strict admin-only access is enforced for contact submissions to protect user privacy.
- * - Admin privileges are determined by the presence of a document in the `/roles_admin/{userId}` collection.
- * - Data validation is minimized in this prototyping phase, focusing on authorization.
- */
+
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    /**
-     * @description Grants public read access and admin-only write access to projects.
-     * @path /projects/{projectId}
-     * @allow get, list: if true;
-     * @allow create: if isAdmin();
-     * @allow update: if isAdmin() && resource != null;
-     * @allow delete: if isAdmin() && resource != null;
-     * @deny create: if !isAdmin();
-     * @deny update: if !isAdmin();
-     * @deny delete: if !isAdmin();
-     * @principle Allows anyone to read projects, but only admins can create, update, or delete them.
-     */
+    // Projects: Publicly readable, admin-only write.
     match /projects/{projectId} {
-      allow get, list: if true;
-      allow create: if isAdmin();
-      allow update: if isAdmin();
-      allow delete: if isAdmin();
+      allow read: if true;
+      allow write: if false; // To be managed by admin later
     }
 
-    /**
-     * @description Restricts access to contact submissions to admins only.
-     * @path /contactSubmissions/{contactSubmissionId}
-     * @allow get, list: if isAdmin();
-     * @allow create: if isAdmin();
-     * @allow update: if isAdmin() && resource != null;
-     * @allow delete: if isAdmin() && resource != null;
-     * @deny get, list: if !isAdmin();
-     * @deny create: if !isAdmin();
-     * @deny update: if !isAdmin();
-     * @deny delete: if !isAdmin();
-     * @principle Enforces strict admin-only access for managing sensitive contact submission data.
-     */
-    match /contactSubmissions/{contactSubmissionId} {
-      allow get, list: if isAdmin();
-      allow create: if isAdmin();
-      allow update: if isAdmin();
-      allow delete: if isAdmin();
-    }
-
-    /**
-     * @description Grants public read access and admin-only write access to team members.
-     * @path /teamMembers/{teamMemberId}
-     * @allow get, list: if true;
-     * @allow create: if isAdmin();
-     * @allow update: if isAdmin() && resource != null;
-     * @allow delete: if isAdmin() && resource != null;
-     * @deny create: if !isAdmin();
-     * @deny update: if !isAdmin();
-     * @deny delete: if !isAdmin();
-     * @principle Allows anyone to read team members, but only admins can create, update, or delete them.
-     */
+    // Team Members: Publicly readable, admin-only write.
     match /teamMembers/{teamMemberId} {
-      allow get, list: if true;
-      allow create: if isAdmin();
-      allow update: if isAdmin();
-      allow delete: if isAdmin();
+      allow read: if true;
+      allow write: if false; // To be managed by admin later
+    }
+    
+    // Contact Submissions: Admin-only access.
+    match /contactSubmissions/{submissionId} {
+      allow read, write: if false; // To be managed by admin later
+      allow create: if true; // Allow anyone to submit the form
     }
 
-    /**
-     * @description Determines admin status based on the existence of a document in this collection.
-     * @path /roles_admin/{userId}
-     */
-    match /roles_admin/{userId} {
-         allow get: if false;
-         allow list: if false; // Prevent listing all admin roles
-         allow create: if false; // Admin role creation should be handled server-side or via a privileged function
-         allow update: if false; // No updates allowed, existence is the indicator
-         allow delete: if false; // Admin role deletion should be handled server-side or via a privileged function
-    }
+    // User data: Users can only access their own data.
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
 
-
-    /**
-     * @description Determines if the current user is an admin based on the existence of a document in the `/roles_admin/{userId}` collection.
-     * @return {bool} True if the user is an admin, false otherwise.
-     */
-    function isAdmin() {
-        return exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
-    }
-
-    /**
-     * @description Checks if the user is signed in.
-     * @return {bool} True if the user is signed in, false otherwise.
-     */
-    function isSignedIn() {
-      return request.auth != null;
+      // Transactions: Users can create transactions for themselves,
+      // and read their own transaction history.
+      match /transactions/{transactionId} {
+        allow create, read: if request.auth != null && request.auth.uid == userId;
+        allow update, delete: if false; // Prevent users from altering history
+      }
     }
   }
 }
