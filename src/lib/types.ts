@@ -45,13 +45,3 @@ export type DigitalProduct = {
   fileUrl: string; // URL to the downloadable file
   imageHint: string;
 };
-
-export type Order = {
-  id?: string;
-  userId: string;
-  productName: string;
-  productId: string;
-  price: number;
-  purchaseDate: Timestamp;
-  orderId: string; // From Midtrans
-};

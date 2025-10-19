@@ -56,12 +56,6 @@ function AuthButtons({ auth }: { auth: Auth }) {
                 <span>Profil Akun</span>
              </Link>
           </DropdownMenuItem>
-          <DropdownMenuItem asChild className="cursor-pointer">
-             <Link href="/akun/riwayat-pesanan">
-                <ShoppingCart className="mr-2 h-4 w-4" />
-                <span>Riwayat Pesanan</span>
-             </Link>
-          </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
             <LogOut className="mr-2 h-4 w-4" />

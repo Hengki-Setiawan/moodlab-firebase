@@ -8,7 +8,7 @@ import { useFirestore, useCollection, useMemoFirebase, useUser } from '@/firebas
 import { collection, query as firestoreQuery, type CollectionReference } from 'firebase/firestore';
 import type { DigitalProduct } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
-import { getPaymentToken, createOrder } from '@/app/actions';
+import { getPaymentToken } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 
@@ -75,20 +75,11 @@ function BuyButton({ product }: { product: DigitalProduct }) {
                 window.snap.pay(token, {
                     onSuccess: async function(result: any){
                         console.log('success', result);
-                        
-                        await createOrder({
-                            userId: user.uid,
-                            productId: product.id,
-                            productName: product.name,
-                            price: product.price,
-                            orderId: result.order_id
-                        });
-                        
                         toast({
                             title: "Pembayaran Berhasil!",
-                            description: "Terima kasih atas pembelian Anda. Pesanan Anda sedang diproses.",
+                            description: "Terima kasih atas pembelian Anda. Produk digital Anda akan segera tersedia.",
                         });
-                        router.push('/akun/riwayat-pesanan');
+                        router.push('/akun');
                     },
                     onPending: function(result: any){
                         console.log('pending', result);

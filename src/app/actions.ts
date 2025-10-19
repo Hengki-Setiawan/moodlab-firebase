@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { initializeServerSideFirestore } from '@/firebase/server-init';
 import midtransclient from 'midtrans-client';
-import type { DigitalProduct, Order } from '@/lib/types';
+import type { DigitalProduct } from '@/lib/types';
 import { createFirebaseAdminApp } from '@/firebase/server-admin-init';
 import { getAuth } from 'firebase-admin/auth';
 import { cookies } from 'next/headers';
@@ -115,39 +115,6 @@ export async function getPaymentToken(product: DigitalProduct, user: {id: string
   } catch (e: any) {
     console.error('Error creating Midtrans transaction:', e);
     return { error: `Gagal membuat transaksi: ${e.message}` };
-  }
-}
-
-const orderSchema = z.object({
-  userId: z.string(),
-  productId: z.string(),
-  productName: z.string(),
-  price: z.number(),
-  orderId: z.string(),
-});
-
-export async function createOrder(data: z.infer<typeof orderSchema>) {
-  const validatedFields = orderSchema.safeParse(data);
-  if (!validatedFields.success) {
-    console.error("Invalid order data", validatedFields.error.flatten().fieldErrors);
-    return { error: "Data pesanan tidak valid." };
-  }
-  
-  try {
-    const { firestore } = initializeServerSideFirestore();
-    const ordersRef = collection(firestore, 'orders');
-    
-    const newOrder: Omit<Order, 'id'> = {
-      ...validatedFields.data,
-      purchaseDate: serverTimestamp() as any,
-    };
-    
-    await addDoc(ordersRef, newOrder);
-    revalidatePath('/akun/riwayat-pesanan');
-    return { success: true };
-  } catch (error) {
-    console.error('Error creating order:', error);
-    return { error: 'Gagal menyimpan pesanan ke database.' };
   }
 }
 
