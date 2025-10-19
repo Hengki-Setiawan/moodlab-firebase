@@ -19,7 +19,7 @@ export type Product = {
   description: string;
   price: number;
   imageUrl: string;
-  imageHint?: string; // imageHint can be optional
+  imageHint?: string;
   fileUrl: string;
   category: string;
 };
@@ -33,7 +33,6 @@ export type Project = {
   clientName: string;
   caseStudyUrl?: string;
 };
-
 
 export type TeamMember = {
   name: string;

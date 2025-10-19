@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser, useAuth, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { collection, query, orderBy } from 'firebase/firestore';
-import type { WithId } from '@/firebase/firestore/use-collection';
 import { FirebaseError } from 'firebase/app';
 
 type Transaction = {

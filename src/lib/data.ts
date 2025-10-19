@@ -1,9 +1,6 @@
 import type { NavItem, Service, TeamMember, Value } from './types';
 import { Video, Megaphone, Lightbulb, ShoppingCart } from 'lucide-react';
 
-// This file is now used for static content that rarely changes.
-// Dynamic data like products and projects are fetched from Firestore.
-
 export const navItems: NavItem[] = [
   { label: 'Home', href: '/' },
   { label: 'Tentang Kami', href: '/tentang-kami' },
@@ -43,8 +40,6 @@ export const services: Service[] = [
   },
 ];
 
-// This is now a static fallback for the homepage featured projects.
-// The main portfolio page fetches data from Firestore.
 export const projects = [
   {
     clientName: 'Kopi Kenangan',

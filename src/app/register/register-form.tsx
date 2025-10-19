@@ -6,7 +6,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
-
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -17,7 +16,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { useAuth } from '@/firebase/provider';
+import { useAuth } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { FirebaseError } from 'firebase/app';
@@ -46,17 +45,19 @@ export function RegisterForm() {
   });
 
   const handleRegister = async (data: FormValues) => {
+    if (!auth) {
+        toast({ title: 'Error', description: 'Firebase Auth is not initialized.', variant: 'destructive' });
+        return;
+    }
     setIsLoading(true);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
-      // Kirim email verifikasi
       await sendEmailVerification(userCredential.user);
       
       toast({
         title: 'Pendaftaran Berhasil!',
         description: 'Akun Anda telah dibuat. Silakan periksa email Anda untuk verifikasi.',
       });
-      // Arahkan ke halaman login agar mereka bisa masuk setelah verifikasi
       router.push('/login');
     } catch (error) {
       console.error(`Registration error:`, error);

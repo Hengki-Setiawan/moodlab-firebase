@@ -17,7 +17,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { useAuth } from '@/firebase/provider';
+import { useAuth } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { FirebaseError } from 'firebase/app';
@@ -46,6 +46,10 @@ export function LoginForm() {
   });
 
   const handleLogin = async (data: FormValues) => {
+    if (!auth) {
+        toast({ title: 'Error', description: 'Firebase Auth is not initialized.', variant: 'destructive' });
+        return;
+    }
     setIsLoading(true);
     try {
       await signInWithEmailAndPassword(auth, data.email, data.password);
@@ -54,7 +58,7 @@ export function LoginForm() {
         description: 'Anda telah berhasil masuk.',
       });
       router.push('/akun');
-      router.refresh(); // Refresh the page to update header state
+      router.refresh(); 
     } catch (error) {
       console.error(`Login error:`, error);
       let errorMessage = 'Terjadi kesalahan. Silakan coba lagi.';

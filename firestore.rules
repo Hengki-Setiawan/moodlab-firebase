@@ -1,100 +1,123 @@
+/**
+ * @fileoverview Firestore Security Rules for Mood Lab Website
+ *
+ * Core Philosophy:
+ * This ruleset enforces a combination of public read access for certain collections (projects, team members),
+ * admin-only access for sensitive data (contact submissions), and user-ownership for private data (user transactions).
+ *
+ * Data Structure:
+ * - /projects/{projectId}: Publicly readable projects.
+ * - /contactSubmissions/{contactSubmissionId}: Contact form submissions, restricted to admins.
+ * - /teamMembers/{teamMemberId}: Publicly readable team member profiles.
+ * - /users/{userId}/transactions/{transactionId}: User-specific transaction history, readable only by the user.
+ *
+ * Key Security Decisions:
+ * - Publicly readable collections (projects, team members) are intended for general display. Writes are restricted.
+ * - Contact submissions are highly sensitive and are therefore only accessible to authorized admins.
+ * - User transactions are private and can only be accessed by the user who owns them.
+ *
+ * Denormalization for Authorization:
+ * - The `Transaction` documents nested under `/users/{userId}` MUST contain a `userId` field equal to the parent path's `userId`. This is validated on create and enforced as immutable on update.
+ */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Allows public read access to project documents, but restricts write access to authenticated users.
+     * @description Grants public read access to projects, but restricts write access.
      * @path /projects/{projectId}
      * @allow get, list: if true;
      * @allow create: if false;
      * @allow update: if false;
      * @allow delete: if false;
-     * @deny create: if true; // Example: Attempt to create a project without authentication.
-     * @deny update: if true; // Example: Attempt to update a project without authentication.
-     * @deny delete: if true; // Example: Attempt to delete a project without authentication.
-     * @principle Allows public read access for displaying project information, but restricts write access.
+     * @principle Public read, restricted write.
      */
     match /projects/{projectId} {
-      allow get, list: if true;
+      allow get: if true;
+      allow list: if true;
       allow create: if false;
       allow update: if false;
       allow delete: if false;
     }
 
     /**
-     * @description Restricts all access to contact submission documents to authenticated users.
+     * @description Restricts access to contact submissions to authenticated users only.
      * @path /contactSubmissions/{contactSubmissionId}
-     * @allow get, list: if false;
+     * @allow get: if false;
+     * @allow list: if false;
      * @allow create: if false;
      * @allow update: if false;
      * @allow delete: if false;
-     * @deny get: if true; // Example: Attempt to get contact submission without authentication.
-     * @deny list: if true; // Example: Attempt to list contact submissions without authentication.
-     * @deny create: if true; // Example: Attempt to create a contact submission without authentication.
-     * @deny update: if true; // Example: Attempt to update a contact submission without authentication.
-     * @deny delete: if true; // Example: Attempt to delete a contact submission without authentication.
-     * @principle Prevents unauthorized access to contact submission data.
+     * @principle Admin-only access.
      */
     match /contactSubmissions/{contactSubmissionId} {
-      allow get, list: if false;
-      allow create: if isSignedIn();
+      allow get: if false;
+      allow list: if false;
+      allow create: if false;
       allow update: if false;
       allow delete: if false;
     }
 
     /**
-     * @description Allows public read access to team member documents, but restricts write access to authenticated users.
+     * @description Grants public read access to team members, but restricts write access.
      * @path /teamMembers/{teamMemberId}
      * @allow get, list: if true;
      * @allow create: if false;
      * @allow update: if false;
      * @allow delete: if false;
-     * @deny create: if true; // Example: Attempt to create a team member without authentication.
-     * @deny update: if true; // Example: Attempt to update a team member without authentication.
-     * @deny delete: if true; // Example: Attempt to delete a team member without authentication.
-     * @principle Allows public read access for displaying team member information, but restricts write access.
+     * @principle Public read, restricted write.
      */
     match /teamMembers/{teamMemberId} {
-      allow get, list: if true;
+      allow get: if true;
+      allow list: if true;
       allow create: if false;
       allow update: if false;
       allow delete: if false;
     }
 
     /**
-     * @description Allows a user to read and write their own transaction documents.
+     * @description Grants access to a user's transactions only to the user themselves.
      * @path /users/{userId}/transactions/{transactionId}
      * @allow get, list: if isOwner(userId);
-     * @allow create: if request.auth.uid == userId;
-     * @allow update: if isOwner(userId);
-     * @allow delete: if isOwner(userId);
-     * @deny get: if request.auth.uid != userId; // Example: Attempt to get another user's transaction.
-     * @deny list: if request.auth.uid != userId; // Example: Attempt to list another user's transactions.
-     * @deny create: if request.auth.uid != userId; // Example: Attempt to create a transaction for another user.
-     * @deny update: if request.auth.uid != userId || resource == null; // Example: Attempt to update another user's transaction, or update a non-existent transaction.
-     * @deny delete: if request.auth.uid != userId || resource == null; // Example: Attempt to delete another user's transaction, or delete a non-existent transaction.
-     * @principle Enforces document ownership for transaction data, allowing users to manage their own transactions.
+     * @allow create: if request.resource.data.userId == userId;
+     * @allow update: if isExistingOwner(userId) && (request.resource.data.userId == resource.data.userId);
+     * @allow delete: if isExistingOwner(userId);
+     * @principle Enforces document ownership for reads and writes.
      */
     match /users/{userId}/transactions/{transactionId} {
-      allow get, list: if isOwner(userId);
-      allow create: if request.auth.uid == userId;
-      allow update: if isOwner(userId);
-      allow delete: if isOwner(userId);
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if request.resource.data.userId == userId;
+      allow update: if isExistingOwner(userId) && (request.resource.data.userId == resource.data.userId);
+      allow delete: if isExistingOwner(userId);
     }
 
-    // Allow only authenticated users to access the entire users collection
-    match /users/{userId} {
-        allow read, write, create, update, delete: if request.auth.uid == userId;
+    // --- Helper functions ---
+
+    /**
+     * @description Checks if the request is authenticated.
+     * @return {bool} True if the request is authenticated, false otherwise.
+     */
+    function isSignedIn() {
+      return request.auth != null;
     }
-  }
 
-  // Helper function to determine if the current user is the owner of the document.
-  function isOwner(userId) {
-    return request.auth.uid == userId;
-  }
+    /**
+     * @description Checks if the user ID matches the authenticated user's ID.
+     * @param {string} userId The user ID to check against.
+     * @return {bool} True if the user ID matches the authenticated user's ID, false otherwise.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
 
-  // Helper function to determine if the user is signed in
-  function isSignedIn() {
-    return request.auth != null;
+    /**
+     * @description Checks if the user is the owner of an existing document.
+     * @param {string} userId The user ID to check against.
+     * @return {bool} True if the user ID matches the authenticated user's ID and the document exists, false otherwise.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
   }
 }

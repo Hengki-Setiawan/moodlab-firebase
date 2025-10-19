@@ -3,13 +3,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, UserCircle2 } from "lucide-react";
-
 import { cn } from "@/lib/utils";
 import { navItems } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Logo } from "@/components/shared/logo";
-import { useUser } from "@/firebase/provider";
+import { useUser } from "@/firebase";
 
 export function Header() {
   const pathname = usePathname();
@@ -69,7 +68,6 @@ export function Header() {
           <div className="hidden md:block">{primaryAction}</div>
         </div>
 
-        {/* Mobile Menu */}
         <div className="md:hidden ml-4">
           <Sheet>
             <SheetTrigger asChild>

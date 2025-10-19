@@ -1,7 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Video, Megaphone, Lightbulb, ShoppingCart } from "lucide-react";
-
+import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -12,12 +11,10 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 import { Badge } from "@/components/ui/badge";
-import { services, projects as staticProjects } from "@/lib/data"; // Keep static data as fallback
+import { services, projects as staticProjects } from "@/lib/data"; 
 import { getPlaceholderImage } from "@/lib/placeholder-images";
 
 export default function Home() {
-  // We can keep using static data for the homepage for speed
-  // Or fetch from Firestore if we want it to be fully dynamic
   const featuredProjects = staticProjects.slice(0, 4);
 
   return (

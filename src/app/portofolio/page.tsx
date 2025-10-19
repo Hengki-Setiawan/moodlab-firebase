@@ -6,10 +6,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where, CollectionReference } from 'firebase/firestore';
+import { collection, query, where, type CollectionReference } from 'firebase/firestore';
 import type { Project } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
-
 
 function ProjectSkeleton() {
   return (
@@ -83,8 +82,9 @@ export default function PortfolioPage() {
             <div className="text-center col-span-full py-12 border rounded-lg bg-destructive/10 border-destructive">
                 <h3 className="text-xl font-semibold text-destructive-foreground">Akses Database Gagal</h3>
                 <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">
-                    Gagal memuat data portofolio. Pastikan aturan keamanan Firestore mengizinkan akses baca ke koleksi 'projects'.
+                    Terjadi kesalahan saat memuat data portofolio. Pastikan aturan keamanan Firestore Anda telah benar dan coba lagi.
                 </p>
+                <p className="text-xs text-muted-foreground mt-4">{error.message}</p>
             </div>
           )}
 
@@ -120,7 +120,7 @@ export default function PortfolioPage() {
             <div className="text-center col-span-full py-12 border rounded-lg">
                 <h3 className="text-xl font-semibold">Belum Ada Portofolio</h3>
                 <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">
-                    Tidak ada portofolio yang ditemukan untuk kategori ini. Coba tambahkan beberapa di konsol Firebase.
+                    Tidak ada portofolio yang ditemukan untuk kategori ini. Coba tambahkan beberapa di konsol Firebase pada koleksi 'projects'.
                 </p>
             </div>
            )}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Image from 'next/image';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -52,7 +52,6 @@ async function saveTransaction(
         console.log("Transaksi berhasil disimpan ke Firestore.");
     } catch (error) {
         console.error("Gagal menyimpan transaksi ke Firestore:", error);
-        // We log the error but don't show it to the user to not interrupt the flow
     }
 }
 
@@ -84,7 +83,6 @@ export function ProductList() {
 
   const productsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    // This creates a stable query object
     return query(collection(firestore, 'products') as CollectionReference<Product>);
   }, [firestore]);
 
@@ -188,7 +186,7 @@ export function ProductList() {
                   toast({ title: "Pembayaran Gagal", description: "Terjadi kesalahan. Silakan coba lagi.", variant: 'destructive' });
                   
                   const transactionToSave = {
-                      orderId: orderId, // Use the generated orderId
+                      orderId: orderId,
                       productName: product.name,
                       amount: product.price,
                       transactionTime: new Date().toISOString(),
@@ -200,7 +198,7 @@ export function ProductList() {
                 },
                 onClose: function(){
                   console.log('Payment popup closed.');
-                  setLoadingProductId(null); // Reset loading state
+                  setLoadingProductId(null);
                 }
               });
         } else {
@@ -231,13 +229,14 @@ export function ProductList() {
         <div className="text-center col-span-full py-12 border rounded-lg bg-destructive/10 border-destructive">
           <h3 className="text-xl font-semibold text-destructive-foreground">Akses Database Gagal</h3>
           <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">
-            Gagal mengambil data produk. Pastikan aturan keamanan Firestore Anda mengizinkan akses baca publik ke koleksi 'products'.
+            Gagal mengambil data produk. Pastikan aturan keamanan Firestore Anda telah benar dan coba lagi.
           </p>
+           <p className="text-xs text-muted-foreground mt-4">{error.message}</p>
         </div>
       );
   }
   
-  if (!products || products.length === 0) {
+  if (!isLoading && !error && (!products || products.length === 0)) {
       return (
         <div className="text-center col-span-full py-12 border rounded-lg">
           <h3 className="text-xl font-semibold">Belum Ada Produk</h3>
@@ -250,7 +249,7 @@ export function ProductList() {
 
   return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-          {products.map((product) => (
+          {products && products.map((product) => (
               <Card key={product.id} className="flex flex-col">
                   <CardHeader className="p-0">
                   <Image

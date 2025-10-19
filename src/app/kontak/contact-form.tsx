@@ -55,7 +55,7 @@ export function ContactForm() {
   });
 
   useEffect(() => {
-    if (state.message) {
+    if (state?.message) {
       if (state.message.startsWith('Success')) {
         toast({
           title: "Pesan Terkirim!",
@@ -70,19 +70,17 @@ export function ContactForm() {
         });
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state]);
+  }, [state, toast, form]);
 
-  // Handle server-side validation errors
   useEffect(() => {
-    const errors = state.errors;
+    const errors = state?.errors;
     if (errors) {
-      if (errors.name) form.setError('name', { type: 'server', message: errors.name[0] });
-      if (errors.email) form.setError('email', { type: 'server', message: errors.email[0] });
-      if (errors.companyName) form.setError('companyName', { type: 'server', message: errors.companyName[0] });
-      if (errors.message) form.setError('message', { type: 'server', message: errors.message[0] });
+      if ('name' in errors && errors.name) form.setError('name', { type: 'server', message: errors.name[0] });
+      if ('email' in errors && errors.email) form.setError('email', { type: 'server', message: errors.email[0] });
+      if ('companyName' in errors && errors.companyName) form.setError('companyName', { type: 'server', message: errors.companyName[0] });
+      if ('message' in errors && errors.message) form.setError('message', { type: 'server', message: errors.message[0] });
     }
-  }, [state.errors, form]);
+  }, [state?.errors, form]);
 
 
   return (

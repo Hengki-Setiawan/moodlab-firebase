@@ -20,7 +20,7 @@ type State = {
     message?: string[];
   };
   message?: string;
-};
+} | null;
 
 export async function submitContactForm(prevState: State, formData: FormData): Promise<State> {
   const validatedFields = contactSchema.safeParse({
@@ -40,7 +40,6 @@ export async function submitContactForm(prevState: State, formData: FormData): P
   const { companyName, ...restOfData } = validatedFields.data;
 
   try {
-    // Menggunakan Firestore untuk form kontak, yang lebih cocok.
     const { firestore } = initializeServerSideFirestore();
     const contactSubmissionsRef = collection(firestore, 'contactSubmissions');
     
@@ -50,8 +49,6 @@ export async function submitContactForm(prevState: State, formData: FormData): P
       submissionDate: serverTimestamp(),
     });
     
-    console.log('Contact form submitted and saved to Firestore:', validatedFields.data);
-
     revalidatePath('/kontak');
 
     return {
