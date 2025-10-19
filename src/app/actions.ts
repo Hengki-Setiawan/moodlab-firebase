@@ -156,6 +156,12 @@ export async function register(prevState: AuthState, formData: FormData): Promis
 }
 
 export async function createSession(idToken: string) {
+  // We only want to create a session cookie if the app is running in a production environment.
+  // In a local dev environment, the Firebase Admin SDK will not be initialized and will throw an error.
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('Skipping session creation in development environment.');
+    return;
+  }
   const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
   const app = createFirebaseAdminApp();
   const auth = getAuth(app);
