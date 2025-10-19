@@ -2,7 +2,7 @@
 
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
-import { addDoc, collection, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { addDoc, collection, doc, serverTimestamp, updateDoc, getDoc } from 'firebase/firestore';
 import { initializeServerSideFirestore } from '@/firebase/server-init';
 import midtransclient from 'midtrans-client';
 import type { CartItem, Order } from '@/lib/types';
@@ -93,6 +93,9 @@ export async function createOrder(items: CartItem[], totalAmount: number, userId
     return { orderId: newOrderRef.id };
   } catch (error) {
     console.error("Error creating order:", error);
+    if (error instanceof Error && error.message.includes('permission-denied')) {
+       return { error: "Gagal membuat pesanan: Izin ditolak. Pastikan Anda sudah login." };
+    }
     return { error: "Gagal membuat pesanan di database." };
   }
 }
@@ -144,7 +147,12 @@ export async function getPaymentToken(order: {id: string; totalAmount: number; i
   }
 }
 
-export async function handleSuccessfulPayment(orderId: string, transactionResult: any) {
+export async function handleSuccessfulPayment(
+  orderId: string, 
+  transactionResult: any,
+  userName: string,
+  userEmail: string,
+) {
   const { firestore } = initializeServerSideFirestore();
   const orderRef = doc(firestore, 'orders', orderId);
 
@@ -154,13 +162,10 @@ export async function handleSuccessfulPayment(orderId: string, transactionResult
       paymentDetails: transactionResult, // Save payment details from Midtrans
     });
 
-    // Fetch the updated order to get user details for email
-    const orderDoc = await (await fetch(orderRef.path)).json();
-    const orderData = orderDoc.data as Order;
-    const userSnapshot = await getAuth().getUser(orderData.userId);
-
-    if (userSnapshot.email) {
-      await sendPurchaseConfirmationEmail(userSnapshot.displayName || 'Pengguna', userSnapshot.email, orderData, orderId);
+    const orderDoc = await getDoc(orderRef);
+    if (orderDoc.exists() && userName && userEmail) {
+        const orderData = orderDoc.data() as Order;
+        await sendPurchaseConfirmationEmail(userName, userEmail, orderData, orderId);
     }
     
     revalidatePath(`/akun/riwayat-pesanan/${orderId}`);
@@ -268,5 +273,3 @@ export async function sendPurchaseConfirmationEmail(name: string, email: string,
     console.error('Error sending purchase confirmation email:', error);
   }
 }
-
-    

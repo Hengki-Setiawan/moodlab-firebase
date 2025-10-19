@@ -106,7 +106,7 @@ export default function KeranjangPage() {
             window.snap.pay(paymentState.token, {
                 onSuccess: async function(result: any){
                     toast({ title: "Pembayaran Berhasil!", description: "Terima kasih, pesanan Anda sedang diproses." });
-                    await handleSuccessfulPayment(orderId, result);
+                    await handleSuccessfulPayment(orderId, result, userDetails.name, userDetails.email);
                     clearCart();
                     router.push(`/akun/riwayat-pesanan/${orderId}`);
                 },
@@ -203,5 +203,3 @@ export default function KeranjangPage() {
         </div>
     )
 }
-
-    
