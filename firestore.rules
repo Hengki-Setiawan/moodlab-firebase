@@ -1,94 +1,25 @@
 /**
- * @fileoverview Firestore Security Rules for Mood Lab Website
+ * @fileoverview Firestore Security Rules for the Mood Lab website.
  *
  * Core Philosophy:
- * This ruleset enforces a combination of public read access for certain collections (projects, teamMembers),
- * admin-only access for sensitive data (contactSubmissions), and strict user-ownership for private data
- * (user transactions).
+ * This ruleset enforces a combination of public read access for certain collections,
+ * admin-only write access for sensitive data, and user-ownership for transaction data.
  *
  * Data Structure:
- * - /projects/{projectId}: Publicly readable project information.
- * - /contactSubmissions/{contactSubmissionId}: Contact form submissions (admin-only).
+ * - /projects/{projectId}: Publicly readable project data.
+ * - /contactSubmissions/{contactSubmissionId}: Contact form submissions, only accessible by admins.
  * - /teamMembers/{teamMemberId}: Publicly readable team member information.
- * - /users/{userId}/transactions/{transactionId}: Transaction history for each user (owner-only).
+ * - /users/{userId}/transactions/{transactionId}: Transaction history for each user.
  *
  * Key Security Decisions:
- * - Projects and team members are publicly readable to showcase the website's portfolio and team.
- * - Contact submissions are restricted to admin-only access to protect user privacy.
- * - User transaction data is strictly controlled, allowing only the owning user to access their own data.
- * - No user listing is allowed; access to user documents is only possible with a known user ID.
+ * - Projects and TeamMembers are publicly readable to showcase the portfolio.
+ * - ContactSubmissions are restricted to admin-only to protect sensitive data.
+ * - Transactions are stored under each user's document and are readable only by that user.
+ * - No user listing is allowed.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    /**
-     * @description Allows public read access to projects, but restricts write access to administrators.
-     * @path /projects/{projectId}
-     * @allow get, list: if true;
-     * @allow create: if false;
-     * @allow update: if false;
-     * @allow delete: if false;
-     * @principle Allows public read access but no write access.
-     */
-    match /projects/{projectId} {
-      allow get, list: if true;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
-    }
-
-    /**
-     * @description Restricts access to contact submissions to administrators only.
-     * @path /contactSubmissions/{contactSubmissionId}
-     * @allow get: if false;
-     * @allow list: if false;
-     * @allow create: if false;
-     * @allow update: if false;
-     * @allow delete: if false;
-     * @principle Restricts all access to the collection.
-     */
-    match /contactSubmissions/{contactSubmissionId} {
-      allow get: if false;
-      allow list: if false;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
-    }
-
-    /**
-     * @description Allows public read access to team members, but restricts write access to administrators.
-     * @path /teamMembers/{teamMemberId}
-     * @allow get, list: if true;
-     * @allow create: if false;
-     * @allow update: if false;
-     * @allow delete: if false;
-     * @principle Allows public read access but no write access.
-     */
-    match /teamMembers/{teamMemberId} {
-      allow get, list: if true;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
-    }
-
-    /**
-     * @description Enforces user-ownership for transaction data, allowing each user to only access their own transactions.
-     * @path /users/{userId}/transactions/{transactionId}
-     * @allow get: if isSignedIn() && isOwner(userId);
-     * @allow list: if isSignedIn() && isOwner(userId);
-     * @allow create: if isSignedIn() && request.auth.uid == request.resource.data.userId;
-     * @allow update: if isSignedIn() && isOwner(userId) && resource != null && request.resource.data.userId == resource.data.userId;
-     * @allow delete: if isSignedIn() && isOwner(userId) && resource != null;
-     * @principle Enforces document ownership for all operations.
-     */
-    match /users/{userId}/transactions/{transactionId} {
-      allow get: if isSignedIn() && isOwner(userId);
-      allow list: if isSignedIn() && isOwner(userId);
-      allow create: if isSignedIn() && request.auth.uid == request.resource.data.userId;
-      allow update: if isSignedIn() && isOwner(userId) && resource != null && request.resource.data.userId == resource.data.userId;
-      allow delete: if isSignedIn() && isOwner(userId) && resource != null;
-    }
 
     function isSignedIn() {
       return request.auth != null;
@@ -96,6 +27,69 @@ service cloud.firestore {
 
     function isOwner(userId) {
       return request.auth.uid == userId;
+    }
+
+    /**
+     * @description Grants public read access to projects, but restricts write access.
+     * @path /projects/{projectId}
+     * @allow (get, list) - Any user can read project information.
+     * @allow (create, update, delete) - Only an authenticated user can create, update, or delete a project.
+     * @deny (create) - An unauthenticated user cannot create a project.
+     * @principle Public read, owner-only writes.
+     */
+    match /projects/{projectId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && resource != null;
+      allow delete: if isSignedIn() && resource != null;
+    }
+
+    /**
+     * @description Restricts access to contact submissions to authenticated users only.
+     * @path /contactSubmissions/{contactSubmissionId}
+     * @allow (create, update, delete, get, list) - Only authenticated users can perform any operation on contact submissions.
+     * @deny (create, update, delete, get, list) - An unauthenticated user cannot access contact submissions.
+     * @principle Admin-only access.
+     */
+    match /contactSubmissions/{contactSubmissionId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && resource != null;
+      allow delete: if isSignedIn() && resource != null;
+    }
+
+    /**
+     * @description Grants public read access to team members, but restricts write access.
+     * @path /teamMembers/{teamMemberId}
+     * @allow (get, list) - Any user can read team member information.
+     * @allow (create, update, delete) - Only an authenticated user can create, update, or delete a team member.
+     * @deny (create) - An unauthenticated user cannot create a team member.
+     * @principle Public read, owner-only writes.
+     */
+    match /teamMembers/{teamMemberId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && resource != null;
+      allow delete: if isSignedIn() && resource != null;
+    }
+
+    /**
+     * @description Restricts access to transactions to the owning user.
+     * @path /users/{userId}/transactions/{transactionId}
+     * @allow (get, list) - Only the user with the matching userId can read their transactions.
+     * @allow (create) - Only the user with the matching userId can create transactions.
+     * @deny (get, list, create) - A user cannot read or create transactions for another user.
+     * @principle User-ownership.
+     */
+    match /users/{userId}/transactions/{transactionId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isOwner(userId) && resource != null && resource.data.userId == userId;
+      allow delete: if isOwner(userId) && resource != null;
     }
   }
 }

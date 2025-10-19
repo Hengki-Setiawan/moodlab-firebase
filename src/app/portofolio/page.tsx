@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where, Query } from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
 import type { Project } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -47,6 +47,8 @@ export default function PortfolioPage() {
     'Strategi Merek', 
     'Produk Digital'
   ];
+  
+  const displayProjects = projects;
 
   return (
     <>
@@ -88,9 +90,9 @@ export default function PortfolioPage() {
             </div>
           )}
 
-          {!isLoading && !error && (
+          {!isLoading && !error && displayProjects && displayProjects.length > 0 && (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-              {projects?.map((project, index) => {
+              {displayProjects.map((project, index) => {
                 return (
                   <div key={project.id} className="group animate-in fade-in slide-in-from-bottom-4 duration-500" style={{ animationDelay: `${index * 50}ms` }}>
                     <Card className="overflow-hidden h-full">
@@ -116,6 +118,14 @@ export default function PortfolioPage() {
               })}
             </div>
           )}
+           {!isLoading && !error && (!displayProjects || displayProjects.length === 0) && (
+            <div className="text-center col-span-full py-12 border rounded-lg">
+                <h3 className="text-xl font-semibold">Belum Ada Portofolio</h3>
+                <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">
+                    Tidak ada portofolio yang ditemukan untuk kategori ini. Coba tambahkan beberapa di konsol Firebase.
+                </p>
+            </div>
+           )}
         </div>
       </section>
     </>
