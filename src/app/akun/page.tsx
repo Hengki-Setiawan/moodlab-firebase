@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { collection, query, orderBy } from 'firebase/firestore';
 import type { WithId } from '@/firebase/firestore/use-collection';
+import { FirebaseError } from 'firebase/app';
 
 type Transaction = {
     orderId: string;
@@ -140,12 +141,16 @@ export default function AccountPage() {
         description: 'Silakan periksa kotak masuk email Anda.',
       });
     } catch (error) {
-      console.error("Resend verification error:", error);
-      toast({
-        title: 'Gagal Mengirim Email',
-        description: 'Terjadi kesalahan. Silakan coba lagi nanti.',
-        variant: 'destructive',
-      });
+        console.error("Resend verification error:", error);
+        let description = 'Terjadi kesalahan. Silakan coba lagi nanti.';
+        if (error instanceof FirebaseError && error.code === 'auth/too-many-requests') {
+            description = 'Terlalu banyak permintaan. Silakan tunggu beberapa saat sebelum mencoba lagi.';
+        }
+        toast({
+            title: 'Gagal Mengirim Email',
+            description,
+            variant: 'destructive',
+        });
     } finally {
         setIsSendingVerification(false);
     }
@@ -241,5 +246,3 @@ export default function AccountPage() {
     </section>
   );
 }
-
-    
