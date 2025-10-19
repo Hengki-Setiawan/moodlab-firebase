@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { createUserWithEmailAndPassword, updateProfile, sendEmailVerification } from 'firebase/auth';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -47,16 +47,18 @@ export function RegisterForm() {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
       
+      // Update profile and send verification email
       await updateProfile(userCredential.user, {
         displayName: data.name
       });
+      await sendEmailVerification(userCredential.user);
       
       const idToken = await userCredential.user.getIdToken();
       await createSession(idToken);
       
       toast({
         title: 'Pendaftaran Berhasil!',
-        description: 'Akun Anda telah berhasil dibuat.',
+        description: 'Akun Anda telah dibuat. Silakan cek email untuk verifikasi.',
       });
       router.push('/');
 
