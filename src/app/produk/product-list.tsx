@@ -49,7 +49,7 @@ export function ProductList() {
 
   const productsRef = useMemoFirebase(() => {
     if (!database) return null;
-    return ref(database, 'products');
+    return ref(database); // Point to the root to get the 'products' node
   }, [database]);
 
   const { data: products, isLoading: isLoadingProducts, error } = useRtdbList<Product>(productsRef);
@@ -162,7 +162,7 @@ export function ProductList() {
         <div className="text-center col-span-full py-12 border rounded-lg">
           <h3 className="text-xl font-semibold">Belum Ada Produk</h3>
           <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">
-            Database produk Anda masih kosong. Silakan tambahkan produk secara manual atau impor data melalui Firebase Console untuk menampilkannya di sini.
+            Database produk Anda masih kosong atau gagal dimuat. Pastikan Anda telah mengimpor `produk-awal.json` ke root Realtime Database Anda.
           </p>
         </div>
       )
