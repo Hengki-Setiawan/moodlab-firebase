@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { initializeServerSideFirestore } from '@/firebase/server-init';
 import midtransclient from 'midtrans-client';
-import type { DigitalProduct } from '@/lib/types';
+import type { DigitalProduct, Order } from '@/lib/types';
 import { createFirebaseAdminApp } from '@/firebase/server-admin-init';
 import { getAuth } from 'firebase-admin/auth';
 import { cookies } from 'next/headers';
@@ -75,7 +75,7 @@ type PaymentTokenState = {
   error?: string;
 };
 
-export async function getPaymentToken(product: DigitalProduct): Promise<PaymentTokenState> {
+export async function getPaymentToken(product: DigitalProduct, user: {id: string; name: string; email: string;}): Promise<PaymentTokenState> {
   
   if (!process.env.MIDTRANS_SERVER_KEY) {
     console.error('MIDTRANS_SERVER_KEY is not set');
@@ -102,12 +102,8 @@ export async function getPaymentToken(product: DigitalProduct): Promise<PaymentT
         category: product.category,
     }],
     customer_details: {
-      // For now, we use generic details.
-      // In a real app, you'd get this from the logged-in user.
-      first_name: "Pembeli",
-      last_name: "Produk Digital",
-      email: "pembeli@example.com",
-      phone: "081234567890"
+      first_name: user.name,
+      email: user.email,
     }
   };
 
@@ -119,6 +115,39 @@ export async function getPaymentToken(product: DigitalProduct): Promise<PaymentT
   } catch (e: any) {
     console.error('Error creating Midtrans transaction:', e);
     return { error: `Gagal membuat transaksi: ${e.message}` };
+  }
+}
+
+const orderSchema = z.object({
+  userId: z.string(),
+  productId: z.string(),
+  productName: z.string(),
+  price: z.number(),
+  orderId: z.string(),
+});
+
+export async function createOrder(data: z.infer<typeof orderSchema>) {
+  const validatedFields = orderSchema.safeParse(data);
+  if (!validatedFields.success) {
+    console.error("Invalid order data", validatedFields.error.flatten().fieldErrors);
+    return { error: "Data pesanan tidak valid." };
+  }
+  
+  try {
+    const { firestore } = initializeServerSideFirestore();
+    const ordersRef = collection(firestore, 'orders');
+    
+    const newOrder: Omit<Order, 'id'> = {
+      ...validatedFields.data,
+      purchaseDate: serverTimestamp() as any,
+    };
+    
+    await addDoc(ordersRef, newOrder);
+    revalidatePath('/akun/riwayat-pesanan');
+    return { success: true };
+  } catch (error) {
+    console.error('Error creating order:', error);
+    return { error: 'Gagal menyimpan pesanan ke database.' };
   }
 }
 

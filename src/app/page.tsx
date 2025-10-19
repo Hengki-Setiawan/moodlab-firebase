@@ -39,7 +39,7 @@ export default function Home() {
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Button asChild size="lg">
-                  <Link href="/portofolio">Lihat Portofolio Kami</Link>
+                  <Link href="/tentang-dan-portofolio">Lihat Portofolio Kami</Link>
                 </Button>
                 <Button asChild size="lg" variant="outline">
                   <Link href="/kontak">Hubungi Kami</Link>
@@ -122,7 +122,7 @@ export default function Home() {
                       key={index}
                       className="md:basis-1/2 lg:basis-1/3"
                     >
-                      <Link href="/portofolio">
+                      <Link href="/tentang-dan-portofolio">
                         <div className="group overflow-hidden rounded-lg">
                           <Card className="h-full">
                             <CardContent className="p-0">

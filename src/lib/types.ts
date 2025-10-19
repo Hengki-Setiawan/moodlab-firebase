@@ -1,4 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
+import type { Timestamp } from 'firebase/firestore';
 
 export type NavItem = {
   label: string;
@@ -43,4 +44,14 @@ export type DigitalProduct = {
   category: string;
   fileUrl: string; // URL to the downloadable file
   imageHint: string;
+};
+
+export type Order = {
+  id?: string;
+  userId: string;
+  productName: string;
+  productId: string;
+  price: number;
+  purchaseDate: Timestamp;
+  orderId: string; // From Midtrans
 };

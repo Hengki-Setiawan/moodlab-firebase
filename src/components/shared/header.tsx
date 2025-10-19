@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, UserCircle, LogOut, LogIn, UserPlus, User } from "lucide-react";
+import { Menu, UserCircle, LogOut, LogIn, UserPlus, User, ShoppingCart } from "lucide-react";
 import { signOut, type Auth } from "firebase/auth";
 
 import { cn } from "@/lib/utils";
@@ -56,6 +56,13 @@ function AuthButtons({ auth }: { auth: Auth }) {
                 <span>Profil Akun</span>
              </Link>
           </DropdownMenuItem>
+          <DropdownMenuItem asChild className="cursor-pointer">
+             <Link href="/akun/riwayat-pesanan">
+                <ShoppingCart className="mr-2 h-4 w-4" />
+                <span>Riwayat Pesanan</span>
+             </Link>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
             <LogOut className="mr-2 h-4 w-4" />
             <span>Logout</span>

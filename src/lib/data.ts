@@ -3,8 +3,7 @@ import { Video, Megaphone, Lightbulb } from 'lucide-react';
 
 export const navItems: NavItem[] = [
   { label: 'Home', href: '/' },
-  { label: 'Tentang Kami', href: '/tentang-kami' },
-  { label: 'Portofolio', href: '/portofolio' },
+  { label: 'Tentang & Portofolio', href: '/tentang-dan-portofolio' },
   { label: 'Produk', href: '/produk'},
   { label: 'Kontak', href: '/kontak' },
 ];

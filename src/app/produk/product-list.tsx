@@ -4,12 +4,13 @@ import Image from 'next/image';
 import { useState, useTransition, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useFirestore, useCollection, useMemoFirebase, useUser } from '@/firebase';
 import { collection, query as firestoreQuery, type CollectionReference } from 'firebase/firestore';
 import type { DigitalProduct } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
-import { getPaymentToken } from '@/app/actions';
+import { getPaymentToken, createOrder } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
 
 declare global {
   interface Window {
@@ -38,11 +39,28 @@ function ProductSkeleton() {
 
 function BuyButton({ product }: { product: DigitalProduct }) {
     const [isPending, startTransition] = useTransition();
+    const { user, isUserLoading } = useUser();
     const { toast } = useToast();
+    const router = useRouter();
 
     const handleBuy = () => {
+        if (!user) {
+            toast({
+                title: "Anda Belum Login",
+                description: "Silakan login terlebih dahulu untuk melakukan pembelian.",
+                variant: "destructive"
+            });
+            router.push('/login');
+            return;
+        }
+
         startTransition(async () => {
-            const { token, error } = await getPaymentToken(product);
+            const userDetails = {
+                id: user.uid,
+                name: user.displayName || 'Pengguna',
+                email: user.email || 'no-email@example.com'
+            };
+            const { token, error } = await getPaymentToken(product, userDetails);
 
             if (error) {
                 toast({
@@ -55,12 +73,22 @@ function BuyButton({ product }: { product: DigitalProduct }) {
 
             if (token) {
                 window.snap.pay(token, {
-                    onSuccess: function(result: any){
+                    onSuccess: async function(result: any){
                         console.log('success', result);
+                        
+                        await createOrder({
+                            userId: user.uid,
+                            productId: product.id,
+                            productName: product.name,
+                            price: product.price,
+                            orderId: result.order_id
+                        });
+                        
                         toast({
                             title: "Pembayaran Berhasil!",
-                            description: "Terima kasih atas pembelian Anda.",
+                            description: "Terima kasih atas pembelian Anda. Pesanan Anda sedang diproses.",
                         });
+                        router.push('/akun/riwayat-pesanan');
                     },
                     onPending: function(result: any){
                         console.log('pending', result);
@@ -86,7 +114,7 @@ function BuyButton({ product }: { product: DigitalProduct }) {
     };
 
     return (
-        <Button onClick={handleBuy} disabled={isPending}>
+        <Button onClick={handleBuy} disabled={isPending || isUserLoading}>
             {isPending ? 'Memproses...' : 'Beli Sekarang'}
         </Button>
     )
@@ -115,15 +143,23 @@ export function ProductList() {
         return;
     }
     
-    const script = document.createElement('script');
-    script.src = "https://app.sandbox.midtrans.com/snap/snap.js"; // Use sandbox for development
-    script.setAttribute('data-client-key', clientKey);
-    script.async = true;
+    const scriptId = 'midtrans-snap-script';
+    let script = document.getElementById(scriptId) as HTMLScriptElement | null;
+
+    if (!script) {
+        script = document.createElement('script');
+        script.id = scriptId;
+        script.src = "https://app.sandbox.midtrans.com/snap/snap.js"; // Use sandbox for development
+        script.setAttribute('data-client-key', clientKey);
+        script.async = true;
+        document.body.appendChild(script);
+    }
     
-    document.body.appendChild(script);
-    
+    // The cleanup function is not strictly necessary if you want the script to be available globally
+    // but can be useful in strict React environments.
     return () => {
-      document.body.removeChild(script);
+      // You might not want to remove the script on component unmount
+      // if other components might need it.
     }
   }, [toast]);
 
