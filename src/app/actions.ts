@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { initializeServerSideFirebase } from '@/firebase/server-init';
 import { revalidatePath } from 'next/cache';
 import { push, serverTimestamp, set } from 'firebase/database';
+import { ref } from 'firebase/database';
 
 const contactSchema = z.object({
   name: z.string().min(2, 'Nama harus memiliki setidaknya 2 karakter.'),
@@ -62,20 +63,4 @@ export async function submitContactForm(prevState: State, formData: FormData): P
     }
     return { message: `Error: ${errorMessage}` };
   }
-}
-
-// Action to seed the database
-import { seedProducts as seedDbProducts } from '@/lib/seed-db';
-import { ref } from 'firebase/database';
-
-export async function seedDatabase() {
-    console.log("Seeding database...");
-    const result = await seedDbProducts();
-    
-    // Revalidate the path to show the new products
-    if (result.success) {
-        revalidatePath('/produk');
-    }
-
-    return result;
 }

@@ -13,7 +13,6 @@ import type { Product } from '@/lib/types';
 import { ShoppingCart, Loader2 } from 'lucide-react';
 import { ref } from 'firebase/database';
 import { Skeleton } from '@/components/ui/skeleton';
-import { seedDatabase } from '../actions';
 
 declare global {
     interface Window {
@@ -44,7 +43,6 @@ function ProductSkeleton() {
 export function ProductList() {
   const [isMidtransReady, setMidtransReady] = useState(false);
   const [loadingProductId, setLoadingProductId] = useState<string | null>(null);
-  const [isSeeding, setIsSeeding] = useState(false);
   const { user, isUserLoading } = useUser();
   const { toast } = useToast();
   const database = useDatabase();
@@ -55,33 +53,6 @@ export function ProductList() {
   }, [database]);
 
   const { data: products, isLoading: isLoadingProducts, error } = useRtdbList<Product>(productsRef);
-
-  const handleSeedDb = async () => {
-    setIsSeeding(true);
-    try {
-        const result = await seedDatabase();
-        if (result.success) {
-            toast({
-                title: "Database Diisi!",
-                description: result.message || "Produk awal telah ditambahkan.",
-            });
-        } else {
-            toast({
-                title: "Gagal Mengisi Database",
-                description: result.message || "Tindakan ini mungkin sudah pernah dilakukan.",
-                variant: 'destructive',
-            });
-        }
-    } catch (e: any) {
-        toast({
-            title: "Error",
-            description: e.message || "Terjadi kesalahan saat mengisi database.",
-            variant: 'destructive',
-        });
-    } finally {
-        setIsSeeding(false);
-    }
-  }
 
   const handleBuy = async (product: Product) => {
     if (!user) {
@@ -173,18 +144,30 @@ export function ProductList() {
       )
   }
 
-  // Handle permission error
+  // Handle permission error or other read errors
   if (error) {
       return (
         <div className="text-center col-span-full py-12 border rounded-lg bg-destructive/10 border-destructive">
-          <h3 className="text-xl font-semibold text-destructive-foreground">Akses Ditolak</h3>
-          <p className="text-muted-foreground mt-2">
-            Aturan keamanan database Anda saat ini tidak mengizinkan pembacaan data. <br/>
-            Silakan perbarui aturan Realtime Database Anda di Firebase Console.
+          <h3 className="text-xl font-semibold text-destructive-foreground">Akses Database Gagal</h3>
+          <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">
+            Gagal membaca data dari Realtime Database. Ini bisa terjadi karena aturan keamanan (security rules) tidak mengizinkan akses baca. Pastikan Anda telah mengatur database Anda ke "Test Mode" di Firebase Console.
           </p>
         </div>
       )
   }
+  
+  // Handle case where data is empty after loading
+  if (!products || products.length === 0) {
+      return (
+        <div className="text-center col-span-full py-12 border rounded-lg">
+          <h3 className="text-xl font-semibold">Belum Ada Produk</h3>
+          <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">
+            Database produk Anda masih kosong. Silakan tambahkan produk secara manual atau impor data melalui Firebase Console untuk menampilkannya di sini.
+          </p>
+        </div>
+      )
+  }
+
 
   return (
     <>
@@ -193,8 +176,6 @@ export function ProductList() {
         data-client-key={process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY}
         onLoad={() => setMidtransReady(true)}
       />
-
-    {products && products.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {products.map((product) => (
                 <Card key={product.id} className="flex flex-col">
@@ -237,17 +218,6 @@ export function ProductList() {
                 </Card>
             ))}
         </div>
-      ) : (
-        <div className="text-center col-span-full py-12 border rounded-lg">
-          <h3 className="text-xl font-semibold">Database Produk Kosong</h3>
-          <p className="text-muted-foreground mt-2 mb-4">
-            Klik tombol di bawah untuk mengisi database Anda dengan produk awal.
-          </p>
-          <Button onClick={handleSeedDb} disabled={isSeeding}>
-            {isSeeding ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Mengisi...</> : 'Isi Database Produk'}
-          </Button>
-        </div>
-      )}
     </>
   );
 }
