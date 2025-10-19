@@ -5,7 +5,7 @@ import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getAuth, Auth } from 'firebase/auth';
 import { getDatabase, Database } from 'firebase/database';
 
-// IMPORTANT: DO NOT MODIFY THIS FUNCTION
+// IMPORTANT: This function is the single source of truth for client-side Firebase initialization.
 export function initializeFirebase(): { firebaseApp: FirebaseApp; auth: Auth; database: Database } {
   const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
   const auth = getAuth(app);
