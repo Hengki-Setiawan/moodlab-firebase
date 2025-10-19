@@ -86,6 +86,11 @@ function useFirebaseContext() {
     return context;
 }
 
+export const useFirebaseApp = (): FirebaseApp | null => {
+    const { firebaseApp } = useFirebaseContext();
+    return firebaseApp;
+};
+
 export const useAuth = (): Auth => {
   const { auth } = useFirebaseContext();
   if (!auth) throw new Error("Firebase Auth not available.");
@@ -113,3 +118,5 @@ export function useMemoFirebase<T>(factory: () => T, deps: DependencyList): T | 
   (memoized as MemoFirebase<T>).__memo = true;
   return memoized;
 }
+
+    

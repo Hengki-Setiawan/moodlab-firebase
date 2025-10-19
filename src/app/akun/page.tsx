@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useUser, useAuth, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useUser, useAuth, useFirestore, useCollection, useMemoFirebase, useFirebaseApp } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Loader2, Info } from 'lucide-react';
 import { collection, query, orderBy } from 'firebase/firestore';
 import { FirebaseError } from 'firebase/app';
 
@@ -101,6 +101,7 @@ function TransactionHistory() {
 export default function AccountPage() {
   const { user, isUserLoading } = useUser();
   const auth = useAuth();
+  const firebaseApp = useFirebaseApp();
   const router = useRouter();
   const { toast } = useToast();
   const [isSendingVerification, setIsSendingVerification] = useState(false);
@@ -154,6 +155,8 @@ export default function AccountPage() {
         setIsSendingVerification(false);
     }
   };
+
+  const projectId = firebaseApp?.options.projectId;
 
   return (
     <section className="py-16 md:py-24">
@@ -218,8 +221,20 @@ export default function AccountPage() {
                     <p>Tidak ada informasi pengguna. Anda akan diarahkan...</p>
                 )}
             </CardContent>
-            <CardFooter>
+            <CardFooter className="flex flex-col items-start gap-6">
                  { user && <Button onClick={handleLogout} variant="destructive">Logout</Button> }
+
+                 { projectId && (
+                    <Alert variant="default" className='border-blue-500 text-blue-800 bg-blue-50'>
+                        <Info className="h-4 w-4 text-blue-600" />
+                        <AlertTitle>Info Diagnostik</AlertTitle>
+                        <AlertDescription>
+                            <p>Aplikasi ini terhubung ke Project ID Firebase:</p>
+                            <p className="font-mono text-sm mt-1 bg-blue-100 p-2 rounded break-all">{projectId}</p>
+                            <p className='mt-2'>Pastikan Project ID ini sama dengan yang Anda lihat di URL konsol Firebase Anda.</p>
+                        </AlertDescription>
+                    </Alert>
+                 )}
             </CardFooter>
             </Card>
 
@@ -245,3 +260,5 @@ export default function AccountPage() {
     </section>
   );
 }
+
+    
