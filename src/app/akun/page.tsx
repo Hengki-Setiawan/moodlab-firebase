@@ -112,6 +112,7 @@ export default function AccountPage() {
   }, [user, isUserLoading, router]);
 
   const handleLogout = async () => {
+    if (!auth) return;
     try {
       await signOut(auth);
       toast({
@@ -240,3 +241,5 @@ export default function AccountPage() {
     </section>
   );
 }
+
+    

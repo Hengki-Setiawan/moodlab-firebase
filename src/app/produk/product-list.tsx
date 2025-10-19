@@ -5,13 +5,12 @@ import Image from 'next/image';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useUser, useFirestore } from '@/firebase/provider';
+import { useUser, useFirestore, useFirebaseApp } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import type { Product } from '@/lib/types';
 import { ShoppingCart, Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getDatabase, ref, onValue, off } from 'firebase/database';
-import { useFirebaseApp } from '@/firebase/provider';
 import { collection, doc, setDoc } from 'firebase/firestore';
 
 declare global {
@@ -91,12 +90,16 @@ export function ProductList() {
 
   useEffect(() => {
     if (!app) {
+      setIsLoading(false);
+      setError("Koneksi Firebase belum siap.");
       return;
     }
 
     const database = getDatabase(app);
+    // Mengacu pada 'products' yang ada di root Realtime Database Anda.
     const productsRef = ref(database, 'products');
     
+    setIsLoading(true);
     const listener = onValue(productsRef, 
       (snapshot) => {
         if (snapshot.exists()) {
@@ -109,6 +112,7 @@ export function ProductList() {
           setError(null);
         } else {
           setProducts([]);
+          setError("Tidak ada produk yang ditemukan di database.");
           console.log("Tidak ada produk ditemukan di path 'products'.");
         }
         setIsLoading(false);
@@ -329,3 +333,5 @@ export function ProductList() {
       </div>
   );
 }
+
+    
