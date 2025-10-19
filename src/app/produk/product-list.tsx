@@ -1,16 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import Image from 'next/image';
 import Script from 'next/script';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { dummyProducts } from '@/lib/data';
-import { useUser } from '@/firebase/provider';
+import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import type { Product } from '@/lib/types';
-import { ShoppingCart } from 'lucide-react';
+import { ShoppingCart, Loader2 } from 'lucide-react';
+import { collection } from 'firebase/firestore';
+import { Skeleton } from '@/components/ui/skeleton';
 
 // You need to declare this so TypeScript knows about the snap object
 declare global {
@@ -19,17 +20,55 @@ declare global {
     }
 }
 
+function ProductSkeleton() {
+    return (
+        <Card className="flex flex-col">
+            <CardHeader className="p-0">
+                <Skeleton className="h-64 w-full rounded-t-lg" />
+            </CardHeader>
+            <CardContent className="p-6 flex-grow">
+                <Skeleton className="h-4 w-1/4 mb-2" />
+                <Skeleton className="h-6 w-3/4 mb-2" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-full mt-1" />
+            </CardContent>
+            <CardFooter className="p-6 pt-0 flex justify-between items-center">
+                <Skeleton className="h-8 w-1/3" />
+                <Skeleton className="h-10 w-1/2" />
+            </CardFooter>
+        </Card>
+    )
+}
+
+
 export function ProductList() {
   const [isMidtransReady, setMidtransReady] = useState(false);
   const [loadingProductId, setLoadingProductId] = useState<string | null>(null);
   const { user, isUserLoading } = useUser();
   const { toast } = useToast();
+  const firestore = useFirestore();
+
+  const productsCollection = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return collection(firestore, 'products');
+  }, [firestore]);
+
+  const { data: products, isLoading: isLoadingProducts } = useCollection<Product>(productsCollection);
 
   const handleBuy = async (product: Product) => {
     if (!user) {
         toast({
             title: 'Harap Login',
             description: 'Anda harus login terlebih dahulu untuk melakukan pembelian.',
+            variant: 'destructive',
+        });
+        return;
+    }
+
+    if (!user.email) {
+        toast({
+            title: 'Email Diperlukan',
+            description: 'Akun Anda tidak memiliki email. Email diperlukan untuk melanjutkan pembayaran.',
             variant: 'destructive',
         });
         return;
@@ -43,7 +82,7 @@ export function ProductList() {
             amount: product.price,
             productName: product.name,
             productId: product.id,
-            customerEmail: user.email, // Pass user email to API route
+            customerEmail: user.email,
         };
 
         const response = await fetch('/api/create-transaction', {
@@ -98,6 +137,13 @@ export function ProductList() {
     }
   };
 
+  if (isLoadingProducts) {
+      return (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+              {[...Array(3)].map((_, i) => <ProductSkeleton key={i} />)}
+          </div>
+      )
+  }
 
   return (
     <>
@@ -107,7 +153,7 @@ export function ProductList() {
         onLoad={() => setMidtransReady(true)}
       />
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-        {dummyProducts.map((product) => (
+        {products && products.map((product) => (
           <Card key={product.id} className="flex flex-col">
             <CardHeader className="p-0">
               <Image
@@ -116,7 +162,7 @@ export function ProductList() {
                 width={600}
                 height={400}
                 className="object-cover w-full h-64 rounded-t-lg"
-                data-ai-hint={product.imageHint}
+                data-ai-hint={product.imageHint || 'product image'}
               />
             </CardHeader>
             <CardContent className="p-6 flex-grow">
@@ -132,7 +178,12 @@ export function ProductList() {
                 onClick={() => handleBuy(product)} 
                 disabled={!isMidtransReady || isUserLoading || !!loadingProductId}
               >
-                {loadingProductId === product.id ? 'Memproses...' : (
+                {loadingProductId === product.id ? (
+                    <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Memproses...
+                    </>
+                ) : (
                     <>
                         <ShoppingCart className="mr-2 h-4 w-4" />
                         Beli Sekarang
@@ -143,6 +194,14 @@ export function ProductList() {
           </Card>
         ))}
       </div>
+      {products && products.length === 0 && !isLoadingProducts && (
+        <div className="text-center col-span-full py-12">
+          <h3 className="text-xl font-semibold">Belum Ada Produk</h3>
+          <p className="text-muted-foreground mt-2">
+            Saat ini belum ada produk digital yang tersedia. Silakan kembali lagi nanti.
+          </p>
+        </div>
+      )}
     </>
   );
 }

@@ -1,8 +1,9 @@
 'use server';
 
 import { z } from 'zod';
-import { getFirestore, collection, addDoc } from 'firebase/firestore/lite';
+import { getFirestore, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { initializeFirebase } from '@/firebase';
+import { revalidatePath } from 'next/cache';
 
 const contactSchema = z.object({
   name: z.string().min(2, 'Nama harus memiliki setidaknya 2 karakter.'),
@@ -37,17 +38,17 @@ export async function submitContactForm(prevState: State, formData: FormData): P
   }
 
   try {
-    // We are using firebase-admin on the server-side
-    // This code will run in a trusted server environment, so we can use admin SDK
     const { firestore } = initializeFirebase();
     const db = getFirestore(firestore.app);
 
     await addDoc(collection(db, 'contactSubmissions'), {
       ...validatedFields.data,
-      submissionDate: new Date(),
+      submissionDate: serverTimestamp(),
     });
     
     console.log('Contact form submitted and saved to Firestore:', validatedFields.data);
+
+    revalidatePath('/kontak');
 
     return {
       message: 'Success: Pesan Anda telah berhasil dikirim!',
@@ -60,4 +61,19 @@ export async function submitContactForm(prevState: State, formData: FormData): P
     }
     return { message: `Error: ${errorMessage}` };
   }
+}
+
+// Action to seed the database
+import { seedProducts as seedDbProducts } from '@/lib/seed-db';
+
+export async function seedDatabase() {
+    console.log("Seeding database...");
+    const result = await seedDbProducts();
+    
+    // Revalidate the path to show the new products
+    if (result.success) {
+        revalidatePath('/produk');
+    }
+
+    return result;
 }

@@ -19,9 +19,9 @@ export type Product = {
   description: string;
   price: number;
   imageUrl: string;
-  imageHint: string;
-  fileUrl: string; // This will hold the Google Drive link
-  category: 'E-book' | 'Template' | 'SFX' | 'Green Screen';
+  imageHint?: string; // imageHint can be optional
+  fileUrl: string;
+  category: 'E-book' | 'Template' | 'SFX' | 'Green Screen' | 'Test';
 };
 
 export type Project = {

@@ -40,19 +40,17 @@ export const services: Service[] = [
   },
 ];
 
-export const dummyProducts: Product[] = [
+export const dummyProducts: Omit<Product, 'id'>[] = [
     {
-      id: 'prod_test_123',
       name: 'Produk Tes Pembayaran',
       description: 'Ini adalah produk khusus untuk menguji fungsionalitas gateway pembayaran Midtrans. Harganya sengaja dibuat rendah.',
       price: 1000,
       imageUrl: 'https://picsum.photos/seed/testproduct/600/400',
       imageHint: 'payment test transaction',
       fileUrl: '#',
-      category: 'Template',
+      category: 'Test',
     },
     {
-      id: 'prod_1',
       name: 'E-book: Rahasia Konten Viral',
       description: 'Panduan lengkap untuk membuat konten yang disukai dan dibagikan oleh jutaan orang. Pelajari psikologi di balik viralitas.',
       price: 75000,
@@ -62,7 +60,6 @@ export const dummyProducts: Product[] = [
       category: 'E-book',
     },
     {
-      id: 'prod_2',
       name: '100+ Template Canva Kekinian',
       description: 'Paket template premium untuk Instagram Stories, Feeds, dan Reels. Desain profesional tanpa perlu jadi desainer.',
       price: 125000,
@@ -72,7 +69,6 @@ export const dummyProducts: Product[] = [
       category: 'Template',
     },
     {
-      id: 'prod_3',
       name: 'Paket SFX untuk Konten Video',
       description: 'Koleksi sound effects (SFX) yang sering digunakan oleh content creator populer untuk video yang lebih engaging.',
       price: 99000,
@@ -82,7 +78,6 @@ export const dummyProducts: Product[] = [
       category: 'SFX',
     },
     {
-        id: 'prod_4',
         name: 'Green Screen Pack Vol. 1',
         description: 'Berbagai macam aset green screen untuk kebutuhan editing video Anda. Efek meme, transisi, dan banyak lagi.',
         price: 89000,
