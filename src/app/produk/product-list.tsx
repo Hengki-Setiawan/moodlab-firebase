@@ -5,12 +5,11 @@ import Image from 'next/image';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useUser, useFirestore, useFirebaseApp } from '@/firebase';
+import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import type { Product } from '@/lib/types';
 import { ShoppingCart, Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { getDatabase, ref, onValue, off } from 'firebase/database';
 import { collection, doc, setDoc } from 'firebase/firestore';
 
 declare global {
@@ -57,7 +56,6 @@ async function saveTransaction(
     }
 }
 
-
 function ProductSkeleton() {
     return (
         <Card className="flex flex-col">
@@ -79,56 +77,17 @@ function ProductSkeleton() {
 }
 
 export function ProductList() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [loadingProductId, setLoadingProductId] = useState<string | null>(null);
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
-  const app = useFirebaseApp();
 
-  useEffect(() => {
-    if (!app) {
-      setIsLoading(false);
-      setError("Koneksi Firebase belum siap.");
-      return;
-    }
+  const productsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return collection(firestore, 'products');
+  }, [firestore]);
 
-    const database = getDatabase(app);
-    // Mengacu pada 'products' yang ada di root Realtime Database Anda.
-    const productsRef = ref(database, 'products');
-    
-    setIsLoading(true);
-    const listener = onValue(productsRef, 
-      (snapshot) => {
-        if (snapshot.exists()) {
-          const productsObject = snapshot.val();
-          const productsArray: Product[] = Object.keys(productsObject).map(key => ({
-            id: key,
-            ...productsObject[key]
-          }));
-          setProducts(productsArray);
-          setError(null);
-        } else {
-          setProducts([]);
-          setError("Tidak ada produk yang ditemukan di database.");
-          console.log("Tidak ada produk ditemukan di path 'products'.");
-        }
-        setIsLoading(false);
-      }, 
-      (error) => {
-        console.error("Firebase Realtime Database error:", error);
-        setError(`Gagal membaca data dari Realtime Database. Pastikan security rules Anda mengizinkan akses baca. Error: ${error.message}`);
-        setIsLoading(false);
-      }
-    );
-
-    return () => {
-      off(productsRef, 'value', listener);
-    };
-  }, [app]);
-
+  const { data: products, isLoading, error } = useCollection<Product>(productsQuery);
 
   const handleBuy = async (product: Product) => {
     if (isUserLoading) return;
@@ -271,18 +230,18 @@ export function ProductList() {
         <div className="text-center col-span-full py-12 border rounded-lg bg-destructive/10 border-destructive">
           <h3 className="text-xl font-semibold text-destructive-foreground">Akses Database Gagal</h3>
           <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">
-            {error}
+            Gagal mengambil data produk. Pastikan aturan keamanan Firestore Anda mengizinkan akses baca ke koleksi 'products'.
           </p>
         </div>
       );
   }
   
-  if (products.length === 0) {
+  if (!products || products.length === 0) {
       return (
         <div className="text-center col-span-full py-12 border rounded-lg">
           <h3 className="text-xl font-semibold">Belum Ada Produk</h3>
           <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">
-            Tidak ada produk yang ditemukan di database. Pastikan data diimpor di bawah node 'products' dan security rules mengizinkan baca.
+            Tidak ada produk yang ditemukan di database. Pastikan Anda sudah menambahkan produk ke koleksi 'products' di Firestore.
           </p>
         </div>
       );
@@ -333,5 +292,3 @@ export function ProductList() {
       </div>
   );
 }
-
-    

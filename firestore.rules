@@ -1,35 +1,108 @@
+/**
+ * @fileoverview Firestore Security Rules for Mood Lab Website
+ *
+ * Core Philosophy:
+ * This ruleset enforces a role-based access control model with public read access for specific collections
+ * (projects, teamMembers) and owner-only access for user-specific data (transactions). It prioritizes
+ * authorization by restricting write access based on user roles.
+ *
+ * Data Structure:
+ * - /projects/{projectId}: Stores project information; publicly readable, writeable by admins only.
+ * - /contactSubmissions/{contactSubmissionId}: Stores contact form submissions; writeable by admins only.
+ * - /teamMembers/{teamMemberId}: Stores team member information; publicly readable, writeable by admins only.
+ * - /users/{userId}/transactions/{transactionId}: Stores user-specific transaction data; readable and writable by the user only.
+ *
+ * Key Security Decisions:
+ * - Public read access is granted to the 'projects' and 'teamMembers' collections to showcase portfolio and team information.
+ * - All write operations are restricted to authorized users or owners to maintain data integrity and prevent unauthorized modifications.
+ * - User listing is disallowed on the `/users` collection, as there is no path to the root user documents, so listing is impossible.
+ * - The 'contactSubmissions' collection is restricted to admin-only access for both read and write to prevent unauthorized data access.
+ *
+ * Denormalization for Authorization:
+ * The 'Transaction' entity denormalizes the `userId` onto each transaction document to enable simple, ownership-based security rules.
+ * This avoids the need for complex queries or joins to verify ownership.
+ */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Allow public read access to projects and team members
+    /**
+     * @description Grants public read access to projects and restricts write access to admins.
+     * @path /projects/{projectId}
+     * @allow get, list: if true;
+     * @allow create: if false;
+     * @allow update: if false;
+     * @allow delete: if false;
+     * @deny create: if true; // Example: Prevent unauthenticated users from creating projects.
+     * @deny update: if true; // Example: Prevent non-owners from updating projects.
+     * @principle Allows public reads and restricts writes to specific roles.
+     */
     match /projects/{projectId} {
-      allow read: if true;
-      allow write: if false; // Admin only
+      allow get, list: if true;
+      allow create, update, delete: if false;
     }
 
-    match /teamMembers/{memberId} {
-      allow read: if true;
-      allow write: if false; // Admin only
+    /**
+     * @description Restricts read and write access to contact submissions to admins only.
+     * @path /contactSubmissions/{contactSubmissionId}
+     * @allow get, list: if false;
+     * @allow create: if false;
+     * @allow update: if false;
+     * @allow delete: if false;
+     * @deny get: if true; // Example: Prevent unauthenticated users from reading contact submissions.
+     * @deny create: if true; // Example: Prevent non-authorized users from creating contact submissions.
+     * @principle Restricts access to sensitive data to authorized personnel only.
+     */
+    match /contactSubmissions/{contactSubmissionId} {
+      allow get, list, create, update, delete: if false;
     }
 
-    // Allow anyone to submit a contact form
-    match /contactSubmissions/{submissionId} {
-      allow create: if true;
-      allow read, update, delete: if false; // Admin only
+    /**
+     * @description Grants public read access to team member profiles and restricts write access to admins.
+     * @path /teamMembers/{teamMemberId}
+     * @allow get, list: if true;
+     * @allow create: if false;
+     * @allow update: if false;
+     * @allow delete: if false;
+     * @deny create: if true; // Example: Prevent unauthenticated users from creating team members.
+     * @deny update: if true; // Example: Prevent non-owners from updating team members.
+     * @principle Allows public reads and restricts writes to specific roles.
+     */
+    match /teamMembers/{teamMemberId} {
+      allow get, list: if true;
+      allow create, update, delete: if false;
     }
 
-    // Rules for user-specific data
-    match /users/{userId} {
-      // A user can only access their own user document, for potential future use.
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+    /**
+     * @description Restricts access to a user's transactions to the user themselves.
+     * @path /users/{userId}/transactions/{transactionId}
+     * @allow get, list: if isOwner(userId);
+     * @allow create: if request.auth.uid == userId;
+     * @allow update: if isExistingOwner(userId);
+     * @allow delete: if isExistingOwner(userId);
+     * @deny get: if request.auth.uid != userId; // Example: Prevent other users from reading transaction data.
+     * @deny create: if request.auth.uid != userId; // Example: Prevent other users from creating transactions under another user's ID.
+     * @deny update: if request.auth.uid != userId; // Example: Prevent other users from updating transaction data.
+     * @deny delete: if request.auth.uid != userId; // Example: Prevent other users from deleting transaction data.
+     * @principle Enforces document ownership for reads and writes, validating the user ID.
+     */
+    match /users/{userId}/transactions/{transactionId} {
+      allow get, list: if isOwner(userId);
+      allow create: if request.auth.uid == userId;
+      allow update: if isOwner(userId);
+      allow delete: if isOwner(userId);
+    }
 
-      // A user can list and create their own transactions.
-      // They can only read/update/delete individual transactions if they own them.
-      match /transactions/{transactionId} {
-        allow list, create: if request.auth != null && request.auth.uid == userId;
-        allow read, update, delete: if request.auth != null && request.auth.uid == userId;
-      }
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    function isExistingOwner(userId) {
+        return request.auth.uid == userId && resource != null;
     }
   }
 }

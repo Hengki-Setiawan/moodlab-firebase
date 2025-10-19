@@ -4,21 +4,49 @@ import { useState } from 'react';
 import Image from 'next/image';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { projects } from '@/lib/data';
-import { getPlaceholderImage } from '@/lib/placeholder-images';
 import { Badge } from '@/components/ui/badge';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, query, where, Query } from 'firebase/firestore';
+import type { Project } from '@/lib/types';
+import { Skeleton } from '@/components/ui/skeleton';
 
-const categories = [
-  'Semua', 
-  ...Array.from(new Set(projects.map(p => p.category)))
-];
+
+function ProjectSkeleton() {
+  return (
+    <Card className="overflow-hidden h-full">
+      <Skeleton className="w-full h-64" />
+      <div className="p-6">
+        <Skeleton className="h-5 w-1/4 mb-2" />
+        <Skeleton className="h-6 w-3/4 mb-2" />
+        <Skeleton className="h-4 w-full mt-1" />
+        <Skeleton className="h-4 w-full mt-1" />
+      </div>
+    </Card>
+  );
+}
 
 export default function PortfolioPage() {
   const [filter, setFilter] = useState('Semua');
+  const firestore = useFirestore();
 
-  const filteredProjects = projects.filter(
-    (project) => filter === 'Semua' || project.category === filter
-  );
+  const projectsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    const baseCollection = collection(firestore, 'projects');
+    if (filter === 'Semua') {
+      return baseCollection;
+    }
+    return query(baseCollection, where('category', '==', filter));
+  }, [firestore, filter]);
+
+  const { data: projects, isLoading, error } = useCollection<Project>(projectsQuery);
+
+  const categories = [
+    'Semua', 
+    'Kampanye Instagram', 
+    'Konten TikTok', 
+    'Strategi Merek', 
+    'Produk Digital'
+  ];
 
   return (
     <>
@@ -45,33 +73,49 @@ export default function PortfolioPage() {
             </Tabs>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredProjects.map((project, index) => {
-              const portfolioImage = getPlaceholderImage(project.image);
-              return (
-                <div key={index} className="group animate-in fade-in slide-in-from-bottom-4 duration-500" style={{ animationDelay: `${index * 50}ms` }}>
-                  <Card className="overflow-hidden h-full">
-                    <CardContent className="p-0">
-                      <Image
-                        src={portfolioImage?.imageUrl || '/placeholder.jpg'}
-                        alt={project.client}
-                        width={600}
-                        height={400}
-                        className="object-cover w-full h-64 transition-transform duration-300 group-hover:scale-105"
-                        data-ai-hint={portfolioImage?.imageHint || 'project screenshot'}
-                      />
-                      <div className="p-6">
-                        <Badge variant="secondary" className="mb-2">{project.category}</Badge>
-                        <h3 className="font-headline text-xl font-semibold">{project.client}</h3>
-                        <p className="text-muted-foreground mt-1">{project.title}</p>
-                        <p className="text-sm text-muted-foreground mt-3">{project.description}</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              );
-            })}
-          </div>
+          {isLoading && (
+             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                {[...Array(6)].map((_, i) => <ProjectSkeleton key={i} />)}
+             </div>
+          )}
+
+          {error && (
+            <div className="text-center col-span-full py-12 border rounded-lg bg-destructive/10 border-destructive">
+                <h3 className="text-xl font-semibold text-destructive-foreground">Akses Database Gagal</h3>
+                <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">
+                    Gagal memuat data portofolio. Pastikan aturan keamanan Firestore mengizinkan akses baca ke koleksi 'projects'.
+                </p>
+            </div>
+          )}
+
+          {!isLoading && !error && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+              {projects?.map((project, index) => {
+                return (
+                  <div key={project.id} className="group animate-in fade-in slide-in-from-bottom-4 duration-500" style={{ animationDelay: `${index * 50}ms` }}>
+                    <Card className="overflow-hidden h-full">
+                      <CardContent className="p-0">
+                        <Image
+                          src={project.imageUrl || '/placeholder.jpg'}
+                          alt={project.clientName}
+                          width={600}
+                          height={400}
+                          className="object-cover w-full h-64 transition-transform duration-300 group-hover:scale-105"
+                          data-ai-hint={'project screenshot'}
+                        />
+                        <div className="p-6">
+                          <Badge variant="secondary" className="mb-2">{project.category}</Badge>
+                          <h3 className="font-headline text-xl font-semibold">{project.clientName}</h3>
+                          <p className="text-muted-foreground mt-1">{project.title}</p>
+                          <p className="text-sm text-muted-foreground mt-3">{project.description}</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </section>
     </>

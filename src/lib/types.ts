@@ -21,16 +21,19 @@ export type Product = {
   imageUrl: string;
   imageHint?: string; // imageHint can be optional
   fileUrl: string;
-  category: 'E-book' | 'Template' | 'SFX' | 'Green Screen' | 'Test';
+  category: string;
 };
 
 export type Project = {
-  client: string;
+  id: string;
   title: string;
-  category: 'Konten TikTok' | 'Kampanye Instagram' | 'Strategi Merek' | 'Produk Digital';
-  image: string;
   description: string;
+  imageUrl: string;
+  category: string;
+  clientName: string;
+  caseStudyUrl?: string;
 };
+
 
 export type TeamMember = {
   name: string;

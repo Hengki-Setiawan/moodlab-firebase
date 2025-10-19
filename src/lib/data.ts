@@ -1,5 +1,8 @@
-import type { NavItem, Service, Project, TeamMember, Value, Product } from './types';
-import { Video, Megaphone, Lightbulb, ShoppingCart, Bot, Zap, HeartHandshake, Search, User } from 'lucide-react';
+import type { NavItem, Service, TeamMember, Value } from './types';
+import { Video, Megaphone, Lightbulb, ShoppingCart } from 'lucide-react';
+
+// This file is now used for static content that rarely changes.
+// Dynamic data like products and projects are fetched from Firestore.
 
 export const navItems: NavItem[] = [
   { label: 'Home', href: '/' },
@@ -40,99 +43,39 @@ export const services: Service[] = [
   },
 ];
 
-export const dummyProducts: Omit<Product, 'id'>[] = [
-    {
-      name: 'Produk Tes Pembayaran',
-      description: 'Ini adalah produk khusus untuk menguji fungsionalitas gateway pembayaran Midtrans. Harganya sengaja dibuat rendah.',
-      price: 1000,
-      imageUrl: 'https://picsum.photos/seed/testproduct/600/400',
-      imageHint: 'payment test transaction',
-      fileUrl: '#',
-      category: 'Test',
-    },
-    {
-      name: 'E-book: Rahasia Konten Viral',
-      description: 'Panduan lengkap untuk membuat konten yang disukai dan dibagikan oleh jutaan orang. Pelajari psikologi di balik viralitas.',
-      price: 75000,
-      imageUrl: 'https://picsum.photos/seed/ebook1/600/400',
-      imageHint: 'book cover marketing',
-      fileUrl: '#', 
-      category: 'E-book',
-    },
-    {
-      name: '100+ Template Canva Kekinian',
-      description: 'Paket template premium untuk Instagram Stories, Feeds, dan Reels. Desain profesional tanpa perlu jadi desainer.',
-      price: 125000,
-      imageUrl: 'https://picsum.photos/seed/template1/600/400',
-      imageHint: 'design template social media',
-      fileUrl: '#',
-      category: 'Template',
-    },
-    {
-      name: 'Paket SFX untuk Konten Video',
-      description: 'Koleksi sound effects (SFX) yang sering digunakan oleh content creator populer untuk video yang lebih engaging.',
-      price: 99000,
-      imageUrl: 'https://picsum.photos/seed/sfx1/600/400',
-      imageHint: 'sound waves audio',
-      fileUrl: '#',
-      category: 'SFX',
-    },
-    {
-        name: 'Green Screen Pack Vol. 1',
-        description: 'Berbagai macam aset green screen untuk kebutuhan editing video Anda. Efek meme, transisi, dan banyak lagi.',
-        price: 89000,
-        imageUrl: 'https://picsum.photos/seed/greenscreen1/600/400',
-        imageHint: 'green screen video editing',
-        fileUrl: '#',
-        category: 'Green Screen',
-    }
-];
-
-
-export const projects: Project[] = [
+// This is now a static fallback for the homepage featured projects.
+// The main portfolio page fetches data from Firestore.
+export const projects = [
   {
-    client: 'Kopi Kenangan',
+    clientName: 'Kopi Kenangan',
     title: 'Kampanye Peluncuran Menu Baru',
     category: 'Kampanye Instagram',
     image: 'portfolio-1',
     description: 'Meningkatkan awareness dan penjualan menu baru melalui serangkaian konten Instagram Stories interaktif dan kolaborasi dengan food vlogger.'
   },
   {
-    client: 'Erigo',
+    clientName: 'Erigo',
     title: 'TikTok Challenge #GayaErigo',
     category: 'Konten TikTok',
     image: 'portfolio-2',
     description: 'Membuat challenge viral di TikTok yang berhasil mengumpulkan jutaan views dan meningkatkan brand association dengan fashion anak muda.'
   },
   {
-    client: 'Somethinc',
+    clientName: 'Somethinc',
     title: 'Revitalisasi Strategi Konten',
     category: 'Strategi Merek',
     image: 'portfolio-3',
     description: 'Menganalisis tren kecantikan di kalangan Gen Z dan merumuskan pilar konten baru yang lebih relevan dan engaging, meningkatkan interaksi hingga 200%.'
   },
   {
-    client: 'Kelas.com',
+    clientName: 'Kelas.com',
     title: 'Kursus Online "Content Creator 101"',
     category: 'Produk Digital',
     image: 'portfolio-4',
     description: 'Mengembangkan dan memasarkan kursus online yang membantu talenta muda memulai karir sebagai content creator, terjual lebih dari 1000 unit dalam bulan pertama.'
-  },
-  {
-    client: 'Sayurbox',
-    title: 'IG Reels "Masak Cepat"',
-    category: 'Kampanye Instagram',
-    image: 'portfolio-5',
-    description: 'Seri video resep cepat dan sehat menggunakan produk dari Sayurbox, menargetkan audiens muda yang sibuk dan peduli kesehatan.'
-  },
-  {
-    client: 'Scentplus',
-    title: 'TikTok "What\'s Your Scent?"',
-    category: 'Konten TikTok',
-    image: 'portfolio-6',
-    description: 'Kampanye interaktif di TikTok untuk membantu pengguna menemukan parfum yang sesuai dengan kepribadian mereka, mendorong traffic ke e-commerce.'
-  },
+  }
 ];
+
 
 export const team: TeamMember[] = [
   {

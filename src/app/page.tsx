@@ -12,11 +12,13 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 import { Badge } from "@/components/ui/badge";
-import { projects, services } from "@/lib/data";
+import { services, projects as staticProjects } from "@/lib/data"; // Keep static data as fallback
 import { getPlaceholderImage } from "@/lib/placeholder-images";
 
 export default function Home() {
-  const featuredProjects = projects.slice(0, 4);
+  // We can keep using static data for the homepage for speed
+  // Or fetch from Firestore if we want it to be fully dynamic
+  const featuredProjects = staticProjects.slice(0, 4);
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -129,7 +131,7 @@ export default function Home() {
                             <CardContent className="p-0">
                               <Image
                                 src={portfolioImage?.imageUrl || "/placeholder.jpg"}
-                                alt={project.client}
+                                alt={project.clientName}
                                 width={600}
                                 height={400}
                                 className="object-cover w-full h-64 transition-transform duration-300 group-hover:scale-105"
@@ -137,7 +139,7 @@ export default function Home() {
                               />
                               <div className="p-4">
                                 <h3 className="font-headline text-xl font-semibold">
-                                  {project.client}
+                                  {project.clientName}
                                 </h3>
                                 <p className="text-sm text-muted-foreground">
                                   {project.title}
