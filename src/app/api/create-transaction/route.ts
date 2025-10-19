@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { snap } from '@/lib/midtrans';
 import type { DigitalProduct, Order } from '@/lib/types';
 import { createFirebaseAdminApp } from '@/firebase/server-admin-init';
-import { getFirestore } from 'firebase-admin/firestore';
+import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import type { User } from 'firebase/auth';
 
 export async function POST(request: Request) {
@@ -33,11 +33,10 @@ export async function POST(request: Request) {
             paymentGateway: 'midtrans',
         };
         
-        // Admin SDK uses FieldValue for server timestamps
         const orderDocRef = await ordersRef.add({
             ...newOrder,
-            createdAt: getFirestore.FieldValue.serverTimestamp(),
-            updatedAt: getFirestore.FieldValue.serverTimestamp(),
+            createdAt: FieldValue.serverTimestamp(),
+            updatedAt: FieldValue.serverTimestamp(),
         });
         const orderId = orderDocRef.id;
 
