@@ -51,20 +51,19 @@ export function ProductList() {
   useEffect(() => {
     if (!database) {
         setIsLoading(false);
-        setError(new Error("Database service is not available."));
+        // We don't set an error here because the database might just be initializing.
+        // The provider handles the availability of the service.
         return;
     }
 
-    const productsRef = ref(database); // Reference to the root of the database
+    const productsRef = ref(database, 'products'); // Reference to the 'products' node
     setIsLoading(true);
 
     const unsubscribe = onValue(productsRef, 
       (snapshot) => {
         try {
             if (snapshot.exists()) {
-                const data = snapshot.val();
-                // The data is nested under a 'products' key from the JSON import
-                const productsObject = data.products;
+                const productsObject = snapshot.val();
                 if (productsObject && typeof productsObject === 'object') {
                     const productsArray: Product[] = Object.keys(productsObject).map(key => ({
                         ...(productsObject[key] as Omit<Product, 'id'>),
@@ -72,11 +71,9 @@ export function ProductList() {
                     }));
                     setProducts(productsArray);
                 } else {
-                    // This handles if the 'products' node is empty or not an object
                     setProducts([]);
                 }
             } else {
-                // If the root is empty
                 setProducts([]);
             }
             setError(null);
