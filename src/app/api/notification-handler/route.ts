@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { snap } from '@/lib/midtrans';
-import { initializeServerSideFirestore } from '@/firebase/server-init';
-import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { createFirebaseAdminApp } from '@/firebase/server-admin-init';
+import { getFirestore } from 'firebase-admin/firestore';
 
 export async function POST(request: Request) {
     try {
@@ -15,49 +15,40 @@ export async function POST(request: Request) {
 
         console.log(`Transaction notification received. Order ID: ${orderId}, Transaction Status: ${transactionStatus}, Fraud Status: ${fraudStatus}`);
 
-        const { firestore } = initializeServerSideFirestore();
-        const orderRef = doc(firestore, 'orders', orderId);
+        // Initialize with Admin SDK for privileged server-side access
+        const adminApp = createFirebaseAdminApp();
+        const firestore = getFirestore(adminApp);
+        const orderRef = firestore.collection('orders').doc(orderId);
 
-        let newStatus: 'paid' | 'failed' | 'pending' = 'pending';
+        let newStatus: 'paid' | 'failed' | 'pending' | 'expired' = 'pending';
 
         if (transactionStatus == 'capture') {
-            // For credit card transaction, we need to check fraudStatus
             if (fraudStatus == 'challenge') {
-                // TODO set transaction status on your database to 'challenge'
-                // and response with 200 OK
                 newStatus = 'pending';
             } else if (fraudStatus == 'accept') {
-                // TODO set transaction status on your database to 'success'
-                // and response with 200 OK
                 newStatus = 'paid';
             }
         } else if (transactionStatus == 'settlement') {
-            // For other payment methods, settlement means success
             newStatus = 'paid';
-        } else if (transactionStatus == 'cancel' ||
-                   transactionStatus == 'deny' ||
-                   transactionStatus == 'expire') {
-            // TODO set transaction status on your database to 'failure'
-            // and response with 200 OK
+        } else if (transactionStatus == 'cancel' || transactionStatus == 'deny') {
             newStatus = 'failed';
+        } else if (transactionStatus == 'expire') {
+            newStatus = 'expired';
         } else if (transactionStatus == 'pending') {
-            // TODO set transaction status on your database to 'pending' / waiting payment
-            // and response with 200 OK
             newStatus = 'pending';
         }
 
-        if (newStatus !== 'pending') { // Only update if status changes from initial pending
-             await updateDoc(orderRef, {
-                status: newStatus,
-                updatedAt: serverTimestamp(),
-                paymentDetails: statusResponse // Optionally save the full response
-            });
-        }
+        await orderRef.update({
+            status: newStatus,
+            updatedAt: getFirestore.FieldValue.serverTimestamp(),
+            paymentDetails: statusResponse // Optionally save the full response
+        });
        
         return NextResponse.json({ message: 'Notification handled' }, { status: 200 });
 
     } catch (error: any) {
         console.error('Error handling notification:', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        // Return a generic error to avoid leaking implementation details
+        return NextResponse.json({ error: 'Failed to handle notification.' }, { status: 500 });
     }
 }

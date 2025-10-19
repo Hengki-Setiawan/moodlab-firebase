@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { snap } from '@/lib/midtrans';
 import type { DigitalProduct, Order } from '@/lib/types';
-import { initializeServerSideFirestore } from '@/firebase/server-init';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { createFirebaseAdminApp } from '@/firebase/server-admin-init';
+import { getFirestore } from 'firebase-admin/firestore';
 import type { User } from 'firebase/auth';
 
 export async function POST(request: Request) {
@@ -13,11 +13,12 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Data produk atau pengguna tidak lengkap' }, { status: 400 });
         }
         
-        // 1. Create a new order document in Firestore with 'pending' status
-        const { firestore } = initializeServerSideFirestore();
-        const ordersRef = collection(firestore, 'orders');
+        // 1. Initialize with Admin SDK for privileged server-side access
+        const adminApp = createFirebaseAdminApp();
+        const firestore = getFirestore(adminApp);
+        const ordersRef = firestore.collection('orders');
 
-        const newOrder: Omit<Order, 'id'> = {
+        const newOrder: Omit<Order, 'id' | 'createdAt' | 'updatedAt'> = {
             userId: user.uid,
             userName: user.displayName || 'N/A',
             userEmail: user.email || 'N/A',
@@ -30,11 +31,14 @@ export async function POST(request: Request) {
             totalAmount: product.price,
             status: 'pending',
             paymentGateway: 'midtrans',
-            createdAt: serverTimestamp() as any, // Cast for server-side
-            updatedAt: serverTimestamp() as any, // Cast for server-side
         };
         
-        const orderDocRef = await addDoc(ordersRef, newOrder);
+        // Admin SDK uses FieldValue for server timestamps
+        const orderDocRef = await ordersRef.add({
+            ...newOrder,
+            createdAt: getFirestore.FieldValue.serverTimestamp(),
+            updatedAt: getFirestore.FieldValue.serverTimestamp(),
+        });
         const orderId = orderDocRef.id;
 
         // 2. Prepare transaction details for Midtrans
@@ -69,6 +73,7 @@ export async function POST(request: Request) {
 
     } catch (error: any) {
         console.error('Error creating transaction:', error);
-        return NextResponse.json({ error: error.message || 'Terjadi kesalahan pada server' }, { status: 500 });
+        // Provide a more generic server error message to the client
+        return NextResponse.json({ error: 'Terjadi kesalahan pada server saat membuat transaksi.' }, { status: 500 });
     }
 }
