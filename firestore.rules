@@ -1,77 +1,77 @@
 /**
- * @fileoverview Firestore Security Rules for Mood Lab's digital product and portfolio management.
+ * @file Firestore Security Rules for Mood Lab website.
  *
- * Core Philosophy:
- * This ruleset provides minimal authorization for the Mood Lab application.
- * Read access is generally public. Write access is denied in the rules and
- * must be handled via backend logic with elevated permissions.
+ * @description This ruleset allows public read access to all collections (digitalProducts, projects, contactSubmissions, teamMembers).
+ * All write operations (create, update, delete) are denied. These collections are intended to be managed by authenticated admins via backend logic (Cloud Functions).
  *
- * Data Structure:
- * - /digitalProducts/{digitalProductId}: Stores information about digital products.
+ * @dataStructure
+ * - /digitalProducts/{digitalProductId}: Stores digital product information.
  * - /projects/{projectId}: Stores project portfolio information.
  * - /contactSubmissions/{contactSubmissionId}: Stores contact form submissions.
  * - /teamMembers/{teamMemberId}: Stores team member information.
  *
- * Key Security Decisions:
- * - Read access (get, list) is generally public for all collections, assuming
- *   that all content is intended to be publicly viewable.
- * - All write operations (create, update, delete) are explicitly denied in the rules,
- *   requiring administrative access via a trusted backend environment (e.g., Cloud Functions).
- * - The lack of user-specific data and the reliance on administrative backend writes
- *   simplifies the ruleset and ensures a clear separation of concerns.
- * - No data validation is performed in the rules themselves, as validation should
- *   be handled by the backend before data is written to Firestore.
+ * @keySecurityDecisions
+ * - Public read access for all collections.
+ * - No client-side write access. All writes are intended to be handled by authenticated admins via backend logic.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Allows public read access to digital product information. All writes are denied.
+     * @description Allows public read access to digital product information. No write access is allowed.
      * @path /digitalProducts/{digitalProductId}
      * @allow (get, list): Any user can read digital product data.
-     * @deny (create, update, delete): All writes are denied; administrative access is required via the backend.
-     * @principle Allows public read access while restricting writes to a backend.
+     * @deny (create, update, delete): No user can create, update, or delete digital product data via client-side rules.
+     * @principle Public read, admin-only writes.
      */
     match /digitalProducts/{digitalProductId} {
       allow get, list: if true;
-      allow create, update, delete: if false;
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
     }
 
     /**
-     * @description Allows public read access to project portfolio information. All writes are denied.
+     * @description Allows public read access to project portfolio information. No write access is allowed.
      * @path /projects/{projectId}
      * @allow (get, list): Any user can read project data.
-     * @deny (create, update, delete): All writes are denied; administrative access is required via the backend.
-     * @principle Allows public read access while restricting writes to a backend.
+     * @deny (create, update, delete): No user can create, update, or delete project data via client-side rules.
+     * @principle Public read, admin-only writes.
      */
     match /projects/{projectId} {
       allow get, list: if true;
-      allow create, update, delete: if false;
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
     }
 
     /**
-     * @description Allows public read access to contact form submissions. All writes are denied.
+     * @description Allows public read access to contact form submissions. No write access is allowed.
      * @path /contactSubmissions/{contactSubmissionId}
      * @allow (get, list): Any user can read contact submission data.
-     * @deny (create, update, delete): All writes are denied; administrative access is required via the backend.
-     * @principle Allows public read access while restricting writes to a backend.
+     * @deny (create, update, delete): No user can create, update, or delete contact submission data via client-side rules.
+     * @principle Public read, admin-only writes.
      */
     match /contactSubmissions/{contactSubmissionId} {
       allow get, list: if true;
-      allow create, update, delete: if false;
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
     }
 
     /**
-     * @description Allows public read access to team member information. All writes are denied.
+     * @description Allows public read access to team member information. No write access is allowed.
      * @path /teamMembers/{teamMemberId}
      * @allow (get, list): Any user can read team member data.
-     * @deny (create, update, delete): All writes are denied; administrative access is required via the backend.
-     * @principle Allows public read access while restricting writes to a backend.
+     * @deny (create, update, delete): No user can create, update, or delete team member data via client-side rules.
+     * @principle Public read, admin-only writes.
      */
     match /teamMembers/{teamMemberId} {
       allow get, list: if true;
-      allow create, update, delete: if false;
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
     }
   }
 }

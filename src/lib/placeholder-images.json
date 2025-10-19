@@ -3,79 +3,79 @@
     {
       "id": "service-content",
       "description": "Abstract image representing content creation",
-      "imageUrl": "https://picsum.photos/seed/service1/600/400",
+      "imageUrl": "https://images.unsplash.com/photo-1710406941299-d61bdb76b109?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxjcmVhdGl2ZSUyMGNvbnRlbnR8ZW58MHx8fHwxNzYwODY4MDI5fDA&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "creative content"
     },
     {
       "id": "service-ads",
       "description": "Abstract image representing digital advertising",
-      "imageUrl": "https://picsum.photos/seed/service2/600/400",
+      "imageUrl": "https://images.unsplash.com/photo-1511268559489-34b624fbfcf5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxkaWdpdGFsJTIwYWRzfGVufDB8fHx8MTc2MDg5MjIwMXww&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "digital ads"
     },
     {
       "id": "service-strategy",
       "description": "Abstract image representing brand strategy",
-      "imageUrl": "https://picsum.photos/seed/service3/600/400",
+      "imageUrl": "https://images.unsplash.com/photo-1551288049-bebda4e38f71?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxzdHJhdGVneSUyMGNoYXJ0fGVufDB8fHx8MTc2MDg5MjIwMnww&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "strategy chart"
     },
     {
       "id": "service-products",
       "description": "Abstract image representing digital products",
-      "imageUrl": "https://picsum.photos/seed/service4/600/400",
+      "imageUrl": "https://images.unsplash.com/photo-1528297506728-9533d2ac3fa4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxkaWdpdGFsJTIwcHJvZHVjdHxlbnwwfHx8fDE3NjA4MTAyNjZ8MA&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "digital product"
     },
     {
       "id": "team-hengki",
       "description": "Profile picture of Hengki",
-      "imageUrl": "https://picsum.photos/seed/hengki/400/400",
+      "imageUrl": "https://images.unsplash.com/photo-1643308004429-ce3793d221a3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxtYWxlJTIwcHJvZmVzc2lvbmFsfGVufDB8fHx8MTc2MDg4MDUyNnww&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "male professional"
     },
     {
       "id": "team-taufik",
       "description": "Profile picture of Taufik",
-      "imageUrl": "https://picsum.photos/seed/taufik/400/400",
+      "imageUrl": "https://images.unsplash.com/photo-1678043665767-f0ea3f4d7ddb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxtYWxlJTIwY3JlYXRpdmV8ZW58MHx8fHwxNzYwODkyMjAyfDA&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "male creative"
     },
     {
       "id": "team-zulfadly",
       "description": "Profile picture of Zulfadly",
-      "imageUrl": "https://picsum.photos/seed/zulfadly/400/400",
+      "imageUrl": "https://images.unsplash.com/photo-1709601414739-40a3c94cf16e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxtYWxlJTIwYW5hbHlzdHxlbnwwfHx8fDE3NjA4ODc5MTd8MA&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "male analyst"
     },
     {
       "id": "portfolio-1",
       "description": "Portfolio item 1",
-      "imageUrl": "https://picsum.photos/seed/p1/600/400",
+      "imageUrl": "https://images.unsplash.com/flagged/photo-1565241572347-2506e38cb16b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxmYXNoaW9uJTIwY2FtcGFpZ258ZW58MHx8fHwxNzYwODkyMjAxfDA&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "fashion campaign"
     },
     {
       "id": "portfolio-2",
       "description": "Portfolio item 2",
-      "imageUrl": "https://picsum.photos/seed/p2/600/400",
+      "imageUrl": "https://images.unsplash.com/photo-1506368249639-73a05d6f6488?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxmb29kJTIwcGhvdG9ncmFwaHl8ZW58MHx8fHwxNzYwODU5OTI3fDA&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "food photography"
     },
     {
       "id": "portfolio-3",
       "description": "Portfolio item 3",
-      "imageUrl": "https://picsum.photos/seed/p3/600/400",
+      "imageUrl": "https://images.unsplash.com/photo-1579869847557-1f67382cc158?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxzb2NpYWwlMjBtZWRpYXxlbnwwfHx8fDE3NjA4Mzk2OTJ8MA&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "social media"
     },
     {
       "id": "portfolio-4",
       "description": "Portfolio item 4",
-      "imageUrl": "https://picsum.photos/seed/p4/600/400",
+      "imageUrl": "https://images.unsplash.com/photo-1631237535242-b6ef156c91b3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxwcm9kdWN0JTIwbGF1bmNofGVufDB8fHx8MTc2MDg3OTc0MHww&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "product launch"
     },
     {
       "id": "portfolio-5",
       "description": "Portfolio item 5",
-      "imageUrl": "https://picsum.photos/seed/p5/600/400",
+      "imageUrl": "https://images.unsplash.com/photo-1658953229625-aad99d7603b4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxhcHAlMjBpbnRlcmZhY2V8ZW58MHx8fHwxNzYwODY4NzY2fDA&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "app interface"
     },
     {
       "id": "portfolio-6",
       "description": "Portfolio item 6",
-      "imageUrl": "https://picsum.photos/seed/p6/600/400",
+      "imageUrl": "https://images.unsplash.com/photo-1633533446213-a438ff5f0629?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxicmFuZCUyMGlkZW50aXR5fGVufDB8fHx8MTc2MDg5MjIwMXww&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "brand identity"
     }
   ]
