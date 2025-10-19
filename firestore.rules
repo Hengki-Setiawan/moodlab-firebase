@@ -1,33 +1,35 @@
 /**
- * @fileOverview Firestore Security Rules for Mood Lab.
+ * @fileoverview Firestore Security Rules for Mood Lab.
  *
- * Core Philosophy:
- * This ruleset provides open read access to the `projects`, `contactSubmissions`, `teamMembers`, and `products` collections,
- * while restricting write access to prevent unauthorized data modification.
+ * Core Philosophy: This ruleset provides public read access to all collections
+ * (`/projects`, `/contactSubmissions`, `/teamMembers`, `/products`)
+ * and restricts write access to prevent unauthorized data modification.
  *
- * Data Structure:
- * The Firestore database consists of four top-level collections: `projects`, `contactSubmissions`, `teamMembers`, and `products`.
- * Each collection stores documents representing portfolio projects, contact form submissions, team member data, and digital product data, respectively.
+ * Data Structure: The database consists of four top-level collections.  There
+ * are no subcollections or user-specific data trees in this initial schema.
  *
  * Key Security Decisions:
- * - Read access is public for all collections to facilitate easy data retrieval for website display.
- * - Write access is denied across all collections to ensure data integrity and prevent unauthorized modifications.
- * - No user-specific data or ownership is enforced in these rules, as the collections are intended to be publicly readable and not user-dependent.
- * - The rules explicitly deny write operations to prevent accidental or malicious data changes.
+ * - Public read access is granted to all collections to allow the Mood Lab website
+ *   to display project portfolios, team member information, and product details.
+ * - All write operations are explicitly denied to prevent unauthorized data changes.
+ *   Future iterations may introduce authentication and role-based access control for
+ *   content management.
+ * - Denormalization is not required because access control is not based on
+ *   hierarchical data or user relationships.
  *
- * Denormalization for Authorization: Not applicable, as all collections have the same public read / restricted write posture.
- * Structural Segregation: Not applicable, as there's no mixing of public and private data within the same collection.
+ * Note: These rules are for prototyping purposes and do not include any
+ * authentication or authorization checks for write operations.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Allows anyone to read project data, but restricts all write access.
+     * @description Allows public read access to project data and denies all write access.
      * @path /projects/{projectId}
-     * @allow (get, list) - Any user can retrieve project data.
-     * @deny (create, update, delete) - No one can create, update, or delete project data.
-     * @principle Allows public read access while preventing unauthorized data modification.
+     * @allow (get, list) Anyone can read project data.
+     * @deny (create, update, delete) No one can create, update, or delete project data.
+     * @principle Public read, restricted writes for project portfolios.
      */
     match /projects/{projectId} {
       allow get, list: if true;
@@ -35,11 +37,11 @@ service cloud.firestore {
     }
 
     /**
-     * @description Allows anyone to read contact submissions, but restricts all write access.
+     * @description Allows public read access to contact submission data and denies all write access.
      * @path /contactSubmissions/{contactSubmissionId}
-     * @allow (get, list) - Any user can retrieve contact submissions.
-     * @deny (create, update, delete) - No one can create, update, or delete contact submissions.
-     * @principle Allows public read access while preventing unauthorized data modification.
+     * @allow (get, list) Anyone can read contact submission data.
+     * @deny (create, update, delete) No one can create, update, or delete contact submission data.
+     * @principle Public read, restricted writes for contact form submissions.
      */
     match /contactSubmissions/{contactSubmissionId} {
       allow get, list: if true;
@@ -47,11 +49,11 @@ service cloud.firestore {
     }
 
     /**
-     * @description Allows anyone to read team member data, but restricts all write access.
+     * @description Allows public read access to team member data and denies all write access.
      * @path /teamMembers/{teamMemberId}
-     * @allow (get, list) - Any user can retrieve team member data.
-     * @deny (create, update, delete) - No one can create, update, or delete team member data.
-     * @principle Allows public read access while preventing unauthorized data modification.
+     * @allow (get, list) Anyone can read team member data.
+     * @deny (create, update, delete) No one can create, update, or delete team member data.
+     * @principle Public read, restricted writes for team member profiles.
      */
     match /teamMembers/{teamMemberId} {
       allow get, list: if true;
@@ -59,11 +61,11 @@ service cloud.firestore {
     }
 
     /**
-     * @description Allows anyone to read product data, but restricts all write access.
+     * @description Allows public read access to product data and denies all write access.
      * @path /products/{productId}
-     * @allow (get, list) - Any user can retrieve product data.
-     * @deny (create, update, delete) - No one can create, update, or delete product data.
-     * @principle Allows public read access while preventing unauthorized data modification.
+     * @allow (get, list) Anyone can read product data.
+     * @deny (create, update, delete) No one can create, update, or delete product data.
+     * @principle Public read, restricted writes for product listings.
      */
     match /products/{productId} {
       allow get, list: if true;
