@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState } from 'react';
 import Image from 'next/image';
 import Script from 'next/script';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
@@ -9,10 +9,9 @@ import { Badge } from '@/components/ui/badge';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import type { Product } from '@/lib/types';
-import { ShoppingCart, Loader2, Database } from 'lucide-react';
+import { ShoppingCart, Loader2 } from 'lucide-react';
 import { collection } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
-import { seedDatabase } from '../actions';
 
 // You need to declare this so TypeScript knows about the snap object
 declare global {
@@ -40,46 +39,6 @@ function ProductSkeleton() {
         </Card>
     )
 }
-
-function SeedButton() {
-    const [isPending, startTransition] = useTransition();
-    const { toast } = useToast();
-
-    const handleSeed = () => {
-        startTransition(async () => {
-            const result = await seedDatabase();
-            if (result.success) {
-                toast({
-                    title: "Database Diisi!",
-                    description: result.message,
-                });
-            } else {
-                toast({
-                    title: "Gagal Mengisi Database",
-                    description: result.message,
-                    variant: 'destructive',
-                });
-            }
-        });
-    };
-
-    return (
-        <Button onClick={handleSeed} disabled={isPending}>
-            {isPending ? (
-                <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Memproses...
-                </>
-            ) : (
-                <>
-                    <Database className="mr-2 h-4 w-4" />
-                    Isi Database Produk
-                </>
-            )}
-        </Button>
-    )
-}
-
 
 export function ProductList() {
   const [isMidtransReady, setMidtransReady] = useState(false);
@@ -193,7 +152,7 @@ export function ProductList() {
         onLoad={() => setMidtransReady(true)}
       />
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-        {products && products.map((product) => (
+        {products && products.length > 0 && products.map((product) => (
           <Card key={product.id} className="flex flex-col">
             <CardHeader className="p-0">
               <Image
@@ -236,11 +195,10 @@ export function ProductList() {
       </div>
       {products && products.length === 0 && !isLoadingProducts && (
         <div className="text-center col-span-full py-12 border rounded-lg">
-          <h3 className="text-xl font-semibold">Database Produk Kosong</h3>
-          <p className="text-muted-foreground mt-2 mb-4">
-            Klik tombol di bawah ini untuk mengisi database dengan produk contoh.
+          <h3 className="text-xl font-semibold">Belum Ada Produk</h3>
+          <p className="text-muted-foreground mt-2">
+            Saat ini belum ada produk yang tersedia. Silakan cek kembali nanti.
           </p>
-          <SeedButton />
         </div>
       )}
     </>
