@@ -5,6 +5,7 @@ export const navItems: NavItem[] = [
   { label: 'Home', href: '/' },
   { label: 'Tentang Kami', href: '/tentang-kami' },
   { label: 'Portofolio', href: '/portofolio' },
+  { label: 'Produk', href: '/produk'},
   { label: 'Kontak', href: '/kontak' },
 ];
 

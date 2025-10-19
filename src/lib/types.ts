@@ -33,3 +33,14 @@ export type Value = {
     title: string;
     description: string;
 };
+
+export type DigitalProduct = {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  imageUrl: string;
+  category: string;
+  fileUrl: string; // URL to the downloadable file
+  imageHint: string;
+};

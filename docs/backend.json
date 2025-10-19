@@ -151,10 +151,17 @@
           "description": "URL of the digital product's image.",
           "format": "uri"
         },
-        "productUrl": {
+        "category": {
           "type": "string",
-          "description": "URL where the product can be purchased.",
-          "format": "uri"
+          "description": "Category of the product."
+        },
+        "fileUrl": {
+          "type": "string",
+          "description": "URL to the downloadable file."
+        },
+        "imageHint": {
+            "type": "string",
+            "description": "Hint for AI to generate a better image."
         }
       },
       "required": [
@@ -163,7 +170,9 @@
         "description",
         "price",
         "imageUrl",
-        "productUrl"
+        "category",
+        "fileUrl",
+        "imageHint"
       ]
     }
   },
