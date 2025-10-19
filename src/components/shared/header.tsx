@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, UserCircle, LogOut, ShoppingCart, History } from "lucide-react";
+import { Menu, UserCircle, LogOut, ShoppingCart } from "lucide-react";
 import { signOut, type Auth } from "firebase/auth";
 
 import { cn } from "@/lib/utils";
@@ -19,8 +19,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useCart } from "@/hooks/use-cart";
-import { Badge } from "../ui/badge";
 
 function AuthButtons({ auth }: { auth: Auth }) {
   const { user, isUserLoading } = useUser();
@@ -58,12 +56,6 @@ function AuthButtons({ auth }: { auth: Auth }) {
                 <span>Profil Akun</span>
              </Link>
           </DropdownMenuItem>
-          <DropdownMenuItem asChild className="cursor-pointer">
-             <Link href="/akun/riwayat-pesanan">
-                <History className="mr-2 h-4 w-4" />
-                <span>Riwayat Pesanan</span>
-             </Link>
-          </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
             <LogOut className="mr-2 h-4 w-4" />
@@ -89,22 +81,6 @@ function AuthButtons({ auth }: { auth: Auth }) {
   );
 }
 
-function CartButton() {
-    const { totalItems } = useCart();
-    return (
-        <Button asChild variant="ghost" size="icon" className="relative">
-            <Link href="/keranjang">
-                <ShoppingCart className="h-5 w-5" />
-                {totalItems > 0 && (
-                     <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 justify-center rounded-full p-0 text-xs">
-                        {totalItems}
-                    </Badge>
-                )}
-                <span className="sr-only">Keranjang Belanja</span>
-            </Link>
-        </Button>
-    )
-}
 
 export function Header() {
   const pathname = usePathname();
@@ -131,11 +107,9 @@ export function Header() {
           ))}
         </nav>
         <div className="hidden md:flex items-center gap-2 ml-4">
-            <CartButton />
           <AuthButtons auth={auth} />
         </div>
         <div className="md:hidden ml-auto flex items-center">
-            <CartButton />
            <AuthButtons auth={auth} />
           <Sheet>
             <SheetTrigger asChild>
@@ -174,5 +148,3 @@ export function Header() {
     </header>
   );
 }
-
-    

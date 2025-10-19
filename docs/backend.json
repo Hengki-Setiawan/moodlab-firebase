@@ -174,58 +174,6 @@
         "fileUrl",
         "imageHint"
       ]
-    },
-    "Order": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Order",
-      "type": "object",
-      "description": "Represents a customer order.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the order."
-        },
-        "userId": {
-          "type": "string",
-          "description": "The ID of the user who placed the order."
-        },
-        "items": {
-          "type": "array",
-          "description": "List of items in the order.",
-          "items": {
-            "$ref": "#/backend/entities/CartItem"
-          }
-        },
-        "totalAmount": {
-          "type": "number",
-          "description": "The total amount of the order."
-        },
-        "status": {
-          "type": "string",
-          "description": "The status of the order.",
-          "enum": ["pending", "processed", "shipped", "completed", "cancelled"]
-        },
-        "createdAt": {
-          "type": "string",
-          "format": "date-time",
-          "description": "The date and time the order was created."
-        }
-      },
-      "required": ["id", "userId", "items", "totalAmount", "status", "createdAt"]
-    },
-    "CartItem": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "CartItem",
-      "type": "object",
-      "description": "Represents an item in the shopping cart.",
-      "properties": {
-        "id": { "type": "string" },
-        "name": { "type": "string" },
-        "price": { "type": "number" },
-        "quantity": { "type": "number" },
-        "imageUrl": { "type": "string", "format": "uri" }
-      },
-      "required": ["id", "name", "price", "quantity", "imageUrl"]
     }
   },
   "auth": {
@@ -275,20 +223,8 @@
           },
           "description": "Stores team member information."
         }
-      },
-       {
-        "path": "/orders/{orderId}",
-        "definition": {
-          "entityName": "Order",
-          "schema": {
-            "$ref": "#/backend/entities/Order"
-          },
-          "description": "Stores customer order information."
-        }
       }
     ],
-    "reasoning": "The Firestore structure is designed to manage digital products, projects, contact submissions, team members and orders. Each entity resides in its own top-level collection to simplify security rules and data access patterns. Orders are stored in a top-level collection to allow users to query their own order history efficiently without needing complex sub-collection queries."
+    "reasoning": "The Firestore structure is designed to manage digital products, projects, contact submissions, and team members. Each entity resides in its own top-level collection to simplify security rules and data access patterns."
   }
 }
-
-    

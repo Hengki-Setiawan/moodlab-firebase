@@ -2,17 +2,13 @@
 
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
-import { addDoc, collection, doc, serverTimestamp, updateDoc, getDoc } from 'firebase/firestore';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { initializeServerSideFirestore } from '@/firebase/server-init';
-import midtransclient from 'midtrans-client';
-import type { CartItem, Order } from '@/lib/types';
 import { createFirebaseAdminApp } from '@/firebase/server-admin-init';
 import { getAuth } from 'firebase-admin/auth';
 import { cookies } from 'next/headers';
 import { Resend } from 'resend';
 import { WelcomeEmail } from '@/emails/welcome-email';
-import { PurchaseConfirmationEmail } from '@/emails/purchase-confirmation-email';
-
 
 const contactSchema = z.object({
   name: z.string().min(2, 'Nama harus memiliki setidaknya 2 karakter.'),
@@ -70,111 +66,6 @@ export async function submitContactForm(prevState: ContactFormState, formData: F
         errorMessage = error.message;
     }
     return { message: `Error: ${errorMessage}` };
-  }
-}
-
-type CreateOrderState = {
-  orderId?: string;
-  error?: string;
-}
-
-export async function createOrder(items: CartItem[], totalAmount: number, userId: string): Promise<CreateOrderState> {
-  const { firestore } = initializeServerSideFirestore();
-  const ordersRef = collection(firestore, 'orders');
-
-  try {
-    const newOrderRef = await addDoc(ordersRef, {
-      userId,
-      items,
-      totalAmount,
-      status: 'pending',
-      createdAt: serverTimestamp(),
-    });
-    return { orderId: newOrderRef.id };
-  } catch (error) {
-    console.error("Error creating order:", error);
-    if (error instanceof Error && error.message.includes('permission-denied')) {
-       return { error: "Gagal membuat pesanan: Izin ditolak. Pastikan Anda sudah login." };
-    }
-    return { error: "Gagal membuat pesanan di database." };
-  }
-}
-
-
-type PaymentTokenState = {
-  token?: string;
-  error?: string;
-};
-
-export async function getPaymentToken(order: {id: string; totalAmount: number; items: CartItem[]}, user: {id: string; name: string; email: string;}): Promise<PaymentTokenState> {
-  
-  if (!process.env.MIDTRANS_SERVER_KEY) {
-    console.error('MIDTRANS_SERVER_KEY is not set');
-    return { error: 'Konfigurasi server pembayaran tidak ditemukan.' };
-  }
-
-  const snap = new midtransclient.Snap({
-    isProduction: false,
-    serverKey: process.env.MIDTRANS_SERVER_KEY,
-  });
-
-  const item_details = order.items.map(item => ({
-    id: item.id,
-    price: item.price,
-    quantity: item.quantity,
-    name: item.name,
-  }));
-
-  const parameter = {
-    transaction_details: {
-      order_id: order.id,
-      gross_amount: order.totalAmount,
-    },
-    item_details,
-    customer_details: {
-      first_name: user.name,
-      email: user.email,
-    }
-  };
-
-  try {
-    const transaction = await snap.createTransaction(parameter);
-    const transactionToken = transaction.token;
-    return { token: transactionToken };
-  } catch (e: any) {
-    console.error('Error creating Midtrans transaction:', e);
-    return { error: `Gagal membuat transaksi: ${e.message}` };
-  }
-}
-
-export async function handleSuccessfulPayment(
-  orderId: string, 
-  transactionResult: any,
-  userName: string,
-  userEmail: string,
-) {
-  const { firestore } = initializeServerSideFirestore();
-  const orderRef = doc(firestore, 'orders', orderId);
-
-  try {
-    await updateDoc(orderRef, {
-      status: 'processed',
-      paymentDetails: transactionResult, // Save payment details from Midtrans
-    });
-
-    const orderDoc = await getDoc(orderRef);
-    if (orderDoc.exists() && userName && userEmail) {
-        const orderData = orderDoc.data() as Order;
-        await sendPurchaseConfirmationEmail(userName, userEmail, orderData, orderId);
-    }
-    
-    revalidatePath(`/akun/riwayat-pesanan/${orderId}`);
-    revalidatePath('/akun/riwayat-pesanan');
-
-    return { success: true };
-  } catch (error) {
-    console.error("Error updating order status:", error);
-    return { success: false, error: "Gagal memperbarui status pesanan." };
   }
 }
 
@@ -249,27 +140,5 @@ export async function sendWelcomeEmail(name: string, email: string) {
     });
   } catch (error) {
     console.error('Error sending welcome email:', error);
-  }
-}
-
-export async function sendPurchaseConfirmationEmail(name: string, email: string, order: Order, orderId: string) {
-   if (!resendApiKey) {
-    console.warn("RESEND_API_KEY is not set. Skipping purchase confirmation email.");
-    return;
-  }
-  const resend = new Resend(resendApiKey);
-  try {
-    await resend.emails.send({
-      from: fromEmail,
-      to: email,
-      subject: `Konfirmasi Pesanan Mood Lab #${orderId}`,
-      react: PurchaseConfirmationEmail({ 
-        userName: name, 
-        order,
-        orderId
-      }),
-    });
-  } catch (error) {
-    console.error('Error sending purchase confirmation email:', error);
   }
 }

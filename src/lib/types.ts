@@ -45,22 +45,3 @@ export type DigitalProduct = {
   fileUrl: string; // URL to the downloadable file
   imageHint: string;
 };
-
-export type CartItem = {
-  id: string;
-  name: string;
-  price: number;
-  quantity: number;
-  imageUrl: string;
-};
-
-export type Order = {
-  id: string;
-  userId: string;
-  items: CartItem[];
-  totalAmount: number;
-  status: 'pending' | 'processed' | 'shipped' | 'completed' | 'cancelled';
-  createdAt: Timestamp;
-};
-
-    

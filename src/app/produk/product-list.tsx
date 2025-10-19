@@ -9,7 +9,6 @@ import { collection, query as firestoreQuery, type CollectionReference } from 'f
 import type { DigitalProduct } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { useCart } from '@/hooks/use-cart';
 import { ShoppingCart } from 'lucide-react';
 
 function ProductSkeleton() {
@@ -31,34 +30,10 @@ function ProductSkeleton() {
   );
 }
 
-function AddToCartButton({ product }: { product: DigitalProduct }) {
-    const { addItem } = useCart();
-    const { toast } = useToast();
-
-    const handleAddToCart = () => {
-        addItem({
-            id: product.id,
-            name: product.name,
-            price: product.price,
-            quantity: 1,
-            imageUrl: product.imageUrl,
-        });
-        toast({
-            title: "Produk Ditambahkan",
-            description: `${product.name} telah ditambahkan ke keranjang.`,
-        });
-    };
-
-    return (
-        <Button onClick={handleAddToCart}>
-            <ShoppingCart className="mr-2 h-4 w-4" />
-            Tambah
-        </Button>
-    )
-}
 
 export function ProductList() {
   const firestore = useFirestore();
+  const { toast } = useToast();
 
   const productsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -66,6 +41,13 @@ export function ProductList() {
   }, [firestore]);
 
   const { data: products, isLoading, error } = useCollection<DigitalProduct>(productsQuery);
+
+  const handleBuy = () => {
+    toast({
+        title: "Fitur Dalam Pengembangan",
+        description: "Fitur pembelian akan segera hadir!",
+    });
+  }
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('id-ID', {
@@ -128,12 +110,13 @@ export function ProductList() {
           </CardContent>
           <CardFooter className="flex justify-between items-center pt-4">
             <p className="font-semibold text-lg">{formatPrice(product.price)}</p>
-            <AddToCartButton product={product} />
+            <Button onClick={handleBuy}>
+                <ShoppingCart className="mr-2 h-4 w-4" />
+                Beli
+            </Button>
           </CardFooter>
         </Card>
       ))}
     </div>
   );
 }
-
-    
