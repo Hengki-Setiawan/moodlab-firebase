@@ -9,9 +9,6 @@ import type { DigitalProduct } from '@/lib/types';
 import { createFirebaseAdminApp } from '@/firebase/server-admin-init';
 import { getAuth } from 'firebase-admin/auth';
 import { cookies } from 'next/headers';
-import { Resend } from 'resend';
-import WelcomeEmail from '@/emails/welcome-email';
-import PurchaseConfirmationEmail from '@/emails/purchase-confirmation-email';
 
 const contactSchema = z.object({
   name: z.string().min(2, 'Nama harus memiliki setidaknya 2 karakter.'),
@@ -170,60 +167,4 @@ export async function createSession(idToken: string) {
 
 export async function clearSession() {
   cookies().delete('__session');
-}
-
-// --- EMAIL ACTIONS ---
-
-const fromEmail = process.env.EMAIL_FROM_ADDRESS || 'Mood Lab <noreply@moodlab.id>';
-
-let resend: Resend | null = null;
-if (process.env.RESEND_API_KEY) {
-  resend = new Resend(process.env.RESEND_API_KEY);
-} else {
-  console.warn("RESEND_API_KEY is not set. Email sending will be disabled. Please create a .env.local file and add your Resend API key.");
-}
-
-
-export async function sendWelcomeEmail(name: string, email: string) {
-  if (!resend) {
-    console.log(`Skipping welcome email to ${email} because email sending is disabled.`);
-    return { success: false, message: 'Email sending is disabled on the server.' };
-  }
-  try {
-    await resend.emails.send({
-      from: fromEmail,
-      to: [email],
-      subject: 'Selamat Datang di Mood Lab!',
-      react: WelcomeEmail({ userName: name }),
-    });
-    console.log(`Welcome email sent to ${email}`);
-    return { success: true, message: 'Welcome email sent.' };
-  } catch (error) {
-    console.error('Error sending welcome email:', error);
-    return { success: false, message: 'Failed to send welcome email.' };
-  }
-}
-
-export async function sendPurchaseConfirmationEmail(userName: string, userEmail: string, product: DigitalProduct, orderId: string) {
-   if (!resend) {
-    console.log(`Skipping purchase confirmation email to ${userEmail} because email sending is disabled.`);
-    return { success: false, message: 'Email sending is disabled on the server.' };
-  }
-  try {
-    await resend.emails.send({
-      from: fromEmail,
-      to: [userEmail],
-      subject: `Konfirmasi Pembelian Anda: ${product.name}`,
-      react: PurchaseConfirmationEmail({ 
-        userName,
-        product,
-        orderId
-      }),
-    });
-    console.log(`Purchase confirmation email sent to ${userEmail}`);
-    return { success: true, message: 'Purchase confirmation email sent.' };
-  } catch (error) {
-    console.error('Error sending purchase confirmation email:', error);
-    return { success: false, message: 'Failed to send purchase confirmation email.' };
-  }
 }

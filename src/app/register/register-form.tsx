@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import { register, createSession, sendWelcomeEmail } from '../actions';
+import { register, createSession } from '../actions';
 import { useAuth } from '@/firebase';
 
 const formSchema = z.object({
@@ -54,12 +54,9 @@ export function RegisterForm() {
       const idToken = await userCredential.user.getIdToken();
       await createSession(idToken);
       
-      // Send welcome email in the background
-      sendWelcomeEmail(data.name, data.email);
-      
       toast({
         title: 'Pendaftaran Berhasil!',
-        description: 'Akun Anda telah berhasil dibuat. Email selamat datang telah dikirim.',
+        description: 'Akun Anda telah berhasil dibuat.',
       });
       router.push('/');
 

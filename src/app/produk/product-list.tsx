@@ -8,7 +8,7 @@ import { useFirestore, useCollection, useMemoFirebase, useUser } from '@/firebas
 import { collection, query as firestoreQuery, type CollectionReference } from 'firebase/firestore';
 import type { DigitalProduct } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
-import { getPaymentToken, sendPurchaseConfirmationEmail } from '@/app/actions';
+import { getPaymentToken } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 
@@ -77,16 +77,8 @@ function BuyButton({ product }: { product: DigitalProduct }) {
                         console.log('success', result);
                         toast({
                             title: "Pembayaran Berhasil!",
-                            description: "Terima kasih! Email konfirmasi telah dikirimkan.",
+                            description: "Terima kasih atas pembelian Anda.",
                         });
-
-                        // Send confirmation email
-                        await sendPurchaseConfirmationEmail(
-                          userDetails.name, 
-                          userDetails.email, 
-                          product,
-                          result.order_id
-                        );
                         
                         router.push('/akun');
                     },
