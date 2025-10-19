@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import type { Product } from '@/lib/types';
 import { ShoppingCart, Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { collection, doc, setDoc } from 'firebase/firestore';
+import { collection, doc, setDoc, query, type CollectionReference } from 'firebase/firestore';
 
 declare global {
     interface Window {
@@ -84,7 +84,8 @@ export function ProductList() {
 
   const productsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    return collection(firestore, 'products');
+    // This creates a stable query object
+    return query(collection(firestore, 'products') as CollectionReference<Product>);
   }, [firestore]);
 
   const { data: products, isLoading, error } = useCollection<Product>(productsQuery);
@@ -241,7 +242,7 @@ export function ProductList() {
         <div className="text-center col-span-full py-12 border rounded-lg">
           <h3 className="text-xl font-semibold">Belum Ada Produk</h3>
           <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">
-            Tidak ada produk yang ditemukan di database Firestore. Pastikan Anda sudah menambahkan produk ke koleksi 'products' di konsol Firebase.
+            Saat ini belum ada produk digital yang tersedia. Silakan cek kembali nanti atau tambahkan produk pada database Firestore Anda di koleksi 'products'.
           </p>
         </div>
       );

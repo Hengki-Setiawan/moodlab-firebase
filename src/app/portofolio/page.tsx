@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
+import { collection, query, where, CollectionReference } from 'firebase/firestore';
 import type { Project } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -31,11 +31,11 @@ export default function PortfolioPage() {
 
   const projectsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    const baseCollection = collection(firestore, 'projects');
+    const projectsCollection = collection(firestore, 'projects') as CollectionReference<Project>;
     if (filter === 'Semua') {
-      return baseCollection;
+      return query(projectsCollection);
     }
-    return query(baseCollection, where('category', '==', filter));
+    return query(projectsCollection, where('category', '==', filter));
   }, [firestore, filter]);
 
   const { data: projects, isLoading, error } = useCollection<Project>(projectsQuery);
@@ -48,8 +48,6 @@ export default function PortfolioPage() {
     'Produk Digital'
   ];
   
-  const displayProjects = projects;
-
   return (
     <>
       <section className="py-16 md:py-24 bg-secondary">
@@ -90,9 +88,9 @@ export default function PortfolioPage() {
             </div>
           )}
 
-          {!isLoading && !error && displayProjects && displayProjects.length > 0 && (
+          {!isLoading && !error && projects && projects.length > 0 && (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-              {displayProjects.map((project, index) => {
+              {projects.map((project, index) => {
                 return (
                   <div key={project.id} className="group animate-in fade-in slide-in-from-bottom-4 duration-500" style={{ animationDelay: `${index * 50}ms` }}>
                     <Card className="overflow-hidden h-full">
@@ -118,7 +116,7 @@ export default function PortfolioPage() {
               })}
             </div>
           )}
-           {!isLoading && !error && (!displayProjects || displayProjects.length === 0) && (
+           {!isLoading && !error && (!projects || projects.length === 0) && (
             <div className="text-center col-span-full py-12 border rounded-lg">
                 <h3 className="text-xl font-semibold">Belum Ada Portofolio</h3>
                 <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">
