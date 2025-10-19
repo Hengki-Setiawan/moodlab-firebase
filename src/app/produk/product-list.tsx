@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { dummyProducts } from '@/lib/data';
 import { useUser } from '@/firebase/provider';
-import { getFunctions, httpsCallable } from 'firebase/functions';
 import { useToast } from '@/hooks/use-toast';
 import type { Product } from '@/lib/types';
 import { ShoppingCart } from 'lucide-react';
@@ -39,19 +38,28 @@ export function ProductList() {
     setLoadingProductId(product.id);
 
     try {
-        const functions = getFunctions();
-        // IMPORTANT: Replace 'createMidtransTransaction' with your actual Cloud Function name
-        const createTransaction = httpsCallable(functions, 'createMidtransTransaction');
-        
         const transactionData = {
             orderId: `order-${product.id}-${Date.now()}`,
             amount: product.price,
             productName: product.name,
             productId: product.id,
+            customerEmail: user.email, // Pass user email to API route
         };
 
-        const result: any = await createTransaction(transactionData);
-        const { token } = result.data;
+        const response = await fetch('/api/create-transaction', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(transactionData),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Gagal membuat transaksi.');
+        }
+        
+        const { token } = await response.json();
 
         if (token) {
             window.snap.pay(token, {
@@ -79,11 +87,11 @@ export function ProductList() {
             throw new Error("Gagal mendapatkan token transaksi.");
         }
 
-    } catch (error) {
-        console.error("Error calling cloud function", error);
+    } catch (error: any) {
+        console.error("Error creating transaction", error);
         toast({
             title: "Terjadi Kesalahan",
-            description: "Tidak dapat memproses pembayaran saat ini. Silakan coba lagi nanti.",
+            description: error.message || "Tidak dapat memproses pembayaran saat ini. Silakan coba lagi nanti.",
             variant: 'destructive',
         });
         setLoadingProductId(null);
@@ -93,14 +101,9 @@ export function ProductList() {
 
   return (
     <>
-      {/* 
-        IMPORTANT: This script loads Midtrans's Snap.js library. 
-        Replace the `src` with the production URL when you go live.
-        The client key should be stored securely, ideally fetched from a non-public environment variable.
-      */}
       <Script
         src="https://app.sandbox.midtrans.com/snap/snap.js"
-        data-client-key={process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY} // You need to set this environment variable
+        data-client-key={process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY}
         onLoad={() => setMidtransReady(true)}
       />
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
