@@ -49,7 +49,6 @@ export function ProductList() {
 
   const productsRef = useMemoFirebase(() => {
     if (!database) return null;
-    // This ref now correctly points to the 'products' node in the root
     return ref(database, 'products'); 
   }, [database]);
 
@@ -62,7 +61,6 @@ export function ProductList() {
             description: 'Anda harus login terlebih dahulu untuk melakukan pembelian.',
             variant: 'destructive',
         });
-        // Optionally, trigger login flow here
         return;
     }
 
@@ -138,14 +136,13 @@ export function ProductList() {
     }
   };
 
-  // The main rendering logic
   const renderContent = () => {
     if (isLoadingProducts) {
         return (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
                 {[...Array(3)].map((_, i) => <ProductSkeleton key={i} />)}
             </div>
-        )
+        );
     }
   
     if (error) {
@@ -156,7 +153,7 @@ export function ProductList() {
               Gagal membaca data dari Realtime Database. Ini bisa terjadi karena aturan keamanan (security rules) tidak mengizinkan akses baca. Pastikan Anda telah mengatur database Anda ke "Test Mode" di Firebase Console. Error: {error.message}
             </p>
           </div>
-        )
+        );
     }
     
     if (!products || products.length === 0) {
@@ -164,10 +161,10 @@ export function ProductList() {
           <div className="text-center col-span-full py-12 border rounded-lg">
             <h3 className="text-xl font-semibold">Belum Ada Produk</h3>
             <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">
-              Database produk Anda masih kosong. Pastikan Anda telah mengimpor `docs/produk-awal.json` ke root Realtime Database Anda.
+              Database produk Anda masih kosong atau data tidak dapat dimuat. Pastikan Anda telah mengimpor `docs/produk-awal.json` ke root Realtime Database Anda.
             </p>
           </div>
-        )
+        );
     }
 
     return (
