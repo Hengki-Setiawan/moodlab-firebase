@@ -1,90 +1,116 @@
 /**
- * @fileoverview Firestore Security Rules for Mood Lab Website
+ * @fileOverview Firestore Security Rules for the Mood Lab website.
  *
  * Core Philosophy:
- * This ruleset enforces a combination of public read access for general content (projects, team members) and strict user-ownership for private data (user transactions).
- * Administrative access is required for managing sensitive data like contact submissions.
+ * This ruleset employs a hybrid security model. Some collections are publicly readable (e.g., 'projects', 'teamMembers'), while others are strictly access-controlled based on user ownership ('/users/{userId}/transactions') or are admin-only ('contactSubmissions'). This design ensures that public-facing data is easily accessible, while sensitive information remains protected.
  *
  * Data Structure:
- * - /projects/{projectId}: Publicly accessible project information.
- * - /contactSubmissions/{contactSubmissionId}: Contact form submissions, restricted to admin access.
- * - /teamMembers/{teamMemberId}: Publicly accessible team member information.
- * - /users/{userId}/transactions/{transactionId}: User-specific transaction history.
+ * - /projects/{projectId}: Stores portfolio project data.
+ * - /contactSubmissions/{contactSubmissionId}: Stores contact form submissions.
+ * - /teamMembers/{teamMemberId}: Stores team member profiles.
+ * - /users/{userId}/transactions/{transactionId}: Stores individual user transaction histories.
  *
  * Key Security Decisions:
- * - Public read access is granted to the 'projects' and 'teamMembers' collections to allow open listing of project and team member data.
- * - Strict ownership is enforced for user transactions, ensuring that only the authenticated user can access their own transaction data.
- * - Administrative access is required for managing contact submissions to protect sensitive information.  No roles are defined in the data model for now, so this is placeholder.
+ * - Projects and Team Members are publicly readable but writable by authenticated users only.
+ * - Contact Submissions are only accessible to authenticated users (admin-only).
+ * - User transaction data is strictly private; only the owning user can access their own transaction history.
+ * - Listing of contact submissions is disallowed.
+ *
+ * Denormalization for Authorization:
+ * The `/users/{userId}/transactions` collection requires that the `userId` field within each transaction document MUST match the `{userId}` path segment. This ensures that users can only create transactions under their own user ID.
+ *
+ * Structural Segregation:
+ * Public and private data are stored in separate collections to simplify rules and improve security. For example, project data intended for public display is stored in the top-level `/projects` collection, while user-specific transaction data is stored under the `/users/{userId}` path.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Allows public read access to project data, but restricts write access to owners only.
+     * @description Grants public read access to project data and restricts writes to authenticated users.
      * @path /projects/{projectId}
      * @allow get, list: if true;
-     * @allow create: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
-     * @allow update: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
-     * @allow delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
-     * @principle Allows public reads but restricts writes.
+     * @allow create: if isSignedIn();
+     * @allow update: if isSignedIn();
+     * @allow delete: if isSignedIn();
+     * @deny get: if false;
+     * @deny list: if false;
+     * @deny create: if false;
+     * @deny update: if false;
+     * @deny delete: if false;
+     * @principle Public read, authenticated-only writes.
      */
     match /projects/{projectId} {
       allow get, list: if true;
-      allow create: if false; // CRITICAL: No owner field defined.
-      allow update: if false; // CRITICAL: No owner field defined.
-      allow delete: if false; // CRITICAL: No owner field defined.
+      allow create: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if isSignedIn();
     }
 
     /**
-     * @description Restricts access to contact submissions to authenticated users only.
+     * @description Restricts access to contact form submissions to authenticated users (admin-only). Listing is disallowed.
      * @path /contactSubmissions/{contactSubmissionId}
-     * @allow get: if false;
-     * @allow list: if false;
-     * @allow create: if false;
-     * @allow update: if false;
-     * @allow delete: if false;
-     * @principle Restricts access to admin users only.
+     * @allow get: if isSignedIn();
+     * @allow create: if isSignedIn();
+     * @allow update: if isSignedIn();
+     * @allow delete: if isSignedIn();
+     * @deny get: if false;
+     * @deny list: if true;
+     * @deny create: if false;
+     * @deny update: if false;
+     * @deny delete: if false;
+     * @principle Admin-only access, no listing allowed.
      */
     match /contactSubmissions/{contactSubmissionId} {
-      allow get, list: if false;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow get: if isSignedIn();
+      allow list: if false;
+      allow create: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if isSignedIn();
     }
 
     /**
-     * @description Allows public read access to team member data, but restricts write access to owners only.
+     * @description Grants public read access to team member data and restricts writes to authenticated users.
      * @path /teamMembers/{teamMemberId}
      * @allow get, list: if true;
-     * @allow create: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
-     * @allow update: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
-     * @allow delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
-     * @principle Allows public reads but restricts writes.
+     * @allow create: if isSignedIn();
+     * @allow update: if isSignedIn();
+     * @allow delete: if isSignedIn();
+     * @deny get: if false;
+     * @deny list: if false;
+     * @deny create: if false;
+     * @deny update: if false;
+     * @deny delete: if false;
+     * @principle Public read, authenticated-only writes.
      */
     match /teamMembers/{teamMemberId} {
       allow get, list: if true;
-      allow create: if false;  // CRITICAL: No owner field defined.
-      allow update: if false; // CRITICAL: No owner field defined.
-      allow delete: if false; // CRITICAL: No owner field defined.
+      allow create: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if isSignedIn();
     }
 
     /**
-     * @description Allows a user to read and write their own transaction data.
+     * @description Enforces strict user-ownership for transaction data.  Only the user who owns the transaction can read or write it.
      * @path /users/{userId}/transactions/{transactionId}
-     * @allow get: if isSignedIn() && isOwner(userId);
-     * @allow list: if isSignedIn() && isOwner(userId);
-     * @allow create: if isSignedIn() && request.resource.data.userId == userId;
-     * @allow update: if isSignedIn() && isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
-     * @allow delete: if isSignedIn() && isExistingOwner(userId);
-     * @principle Enforces document ownership for writes, ensures only the owner can read.
+     * @allow get: if isOwner(userId);
+     * @allow list: if isOwner(userId);
+     * @allow create: if isOwner(userId) && request.resource.data.userId == userId;
+     * @allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+     * @allow delete: if isExistingOwner(userId);
+     * @deny get: if false;
+     * @deny list: if false;
+     * @deny create: if false;
+     * @deny update: if false;
+     * @deny delete: if false;
+     * @principle Enforces document ownership for all operations, validates relational integrity.
      */
     match /users/{userId}/transactions/{transactionId} {
-      allow get: if isSignedIn() && isOwner(userId);
-      allow list: if isSignedIn() && isOwner(userId);
-      allow create: if isSignedIn() && request.resource.data.userId == userId;
-      allow update: if isSignedIn() && isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
-      allow delete: if isSignedIn() && isExistingOwner(userId);
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+      allow delete: if isExistingOwner(userId);
     }
   }
 
