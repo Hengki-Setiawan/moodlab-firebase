@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, UserCircle, LogOut, LogIn, UserPlus } from "lucide-react";
+import { Menu, UserCircle, LogOut, LogIn, UserPlus, User } from "lucide-react";
 import { signOut, type Auth } from "firebase/auth";
 
 import { cn } from "@/lib/utils";
@@ -50,6 +50,12 @@ function AuthButtons({ auth }: { auth: Auth }) {
         <DropdownMenuContent align="end">
           <DropdownMenuLabel>Akun Saya</DropdownMenuLabel>
           <DropdownMenuSeparator />
+          <DropdownMenuItem asChild className="cursor-pointer">
+             <Link href="/akun">
+                <User className="mr-2 h-4 w-4" />
+                <span>Profil Akun</span>
+             </Link>
+          </DropdownMenuItem>
           <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
             <LogOut className="mr-2 h-4 w-4" />
             <span>Logout</span>
@@ -59,13 +65,16 @@ function AuthButtons({ auth }: { auth: Auth }) {
     );
   }
 
+  const showAuthButtons = !pathname.startsWith('/login') && !pathname.startsWith('/register');
+
+  if (!showAuthButtons) {
+    return null;
+  }
+
   return (
     <div className="flex items-center gap-2">
-      <Button asChild variant="ghost" className={cn(pathname === "/login" && "hidden")}>
+      <Button asChild>
         <Link href="/login">Login</Link>
-      </Button>
-      <Button asChild className={cn(pathname === "/register" && "hidden")}>
-        <Link href="/register">Register</Link>
       </Button>
     </div>
   );

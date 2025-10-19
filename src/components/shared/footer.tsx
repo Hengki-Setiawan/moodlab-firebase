@@ -25,6 +25,11 @@ export function Footer() {
                   </Link>
                 </li>
               ))}
+               <li>
+                  <Link href="/login" className="text-muted-foreground hover:text-foreground transition-colors">
+                    Login
+                  </Link>
+                </li>
             </ul>
           </div>
           <div>
