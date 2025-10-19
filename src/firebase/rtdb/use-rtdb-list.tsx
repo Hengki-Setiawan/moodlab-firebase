@@ -56,13 +56,10 @@ export function useRtdbList<T = any>(
       (snapshot: DataSnapshot) => {
         if (snapshot.exists()) {
           const val = snapshot.val();
-          // Realtime Database might return an object with a single root key (e.g., "products")
-          // or the list of items directly. We need to handle both cases.
-          const dataNode = (val && val.products) ? val.products : val;
           
-          if (dataNode && typeof dataNode === 'object') {
-              const results: ResultItemType[] = Object.keys(dataNode).map(key => ({
-                ...(dataNode[key] as T),
+          if (val && typeof val === 'object') {
+              const results: ResultItemType[] = Object.keys(val).map(key => ({
+                ...(val[key] as T),
                 id: key, // The object key is the ID
               }));
               setData(results);

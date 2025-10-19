@@ -49,7 +49,8 @@ export function ProductList() {
 
   const productsRef = useMemoFirebase(() => {
     if (!database) return null;
-    return ref(database); // Point to the root to get the 'products' node
+    // This ref now correctly points to the 'products' node
+    return ref(database, 'products'); 
   }, [database]);
 
   const { data: products, isLoading: isLoadingProducts, error } = useRtdbList<Product>(productsRef);
