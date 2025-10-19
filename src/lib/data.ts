@@ -1,5 +1,5 @@
 import type { NavItem, Service, Project, TeamMember, Value, Product } from './types';
-import { Video, Megaphone, Lightbulb, ShoppingCart, Bot, Zap, HeartHandshake, Search } from 'lucide-react';
+import { Video, Megaphone, Lightbulb, ShoppingCart, Bot, Zap, HeartHandshake, Search, User } from 'lucide-react';
 
 export const navItems: NavItem[] = [
   { label: 'Home', href: '/' },
