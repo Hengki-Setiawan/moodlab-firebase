@@ -42,6 +42,16 @@ export const services: Service[] = [
 
 export const dummyProducts: Product[] = [
     {
+      id: 'prod_test_123',
+      name: 'Produk Tes Pembayaran',
+      description: 'Ini adalah produk khusus untuk menguji fungsionalitas gateway pembayaran Midtrans. Harganya sengaja dibuat rendah.',
+      price: 1000,
+      imageUrl: 'https://picsum.photos/seed/testproduct/600/400',
+      imageHint: 'payment test transaction',
+      fileUrl: '#',
+      category: 'Template',
+    },
+    {
       id: 'prod_1',
       name: 'E-book: Rahasia Konten Viral',
       description: 'Panduan lengkap untuk membuat konten yang disukai dan dibagikan oleh jutaan orang. Pelajari psikologi di balik viralitas.',
