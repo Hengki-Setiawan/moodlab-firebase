@@ -5,6 +5,7 @@ import { FirebaseApp } from 'firebase/app';
 import { Firestore } from 'firebase/firestore';
 import { Auth, User, onAuthStateChanged } from 'firebase/auth';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener'
+import { FirestorePermissionError, errorEmitter } from '@/firebase';
 
 interface FirebaseProviderProps {
   children: ReactNode;
@@ -91,15 +92,13 @@ export const useFirebaseApp = (): FirebaseApp | null => {
     return firebaseApp;
 };
 
-export const useAuth = (): Auth => {
+export const useAuth = (): Auth | null => {
   const { auth } = useFirebaseContext();
-  if (!auth) throw new Error("Firebase Auth not available.");
   return auth;
 };
 
-export const useFirestore = (): Firestore => {
+export const useFirestore = (): Firestore | null => {
   const { firestore } = useFirebaseContext();
-  if (!firestore) throw new Error("Firestore not available.");
   return firestore;
 };
 
@@ -118,5 +117,3 @@ export function useMemoFirebase<T>(factory: () => T, deps: DependencyList): T | 
   (memoized as MemoFirebase<T>).__memo = true;
   return memoized;
 }
-
-    

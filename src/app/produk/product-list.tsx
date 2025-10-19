@@ -52,6 +52,13 @@ async function saveTransaction(
         console.log("Transaksi berhasil disimpan ke Firestore.");
     } catch (error) {
         console.error("Gagal menyimpan transaksi ke Firestore:", error);
+        // Implementasikan error handling yang lebih baik jika diperlukan
+        const contextualError = new FirestorePermissionError({
+            path: `users/${userId}/transactions/${transactionData.orderId}`,
+            operation: 'create',
+            requestResourceData: transactionData,
+        });
+        errorEmitter.emit('permission-error', contextualError);
     }
 }
 
@@ -229,7 +236,7 @@ export function ProductList() {
         <div className="text-center col-span-full py-12 border rounded-lg bg-destructive/10 border-destructive">
           <h3 className="text-xl font-semibold text-destructive-foreground">Akses Database Gagal</h3>
           <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">
-            Gagal mengambil data produk. Pastikan aturan keamanan Firestore Anda telah benar dan koleksi 'products' ada di database Anda.
+            Gagal mengambil data produk dari Firestore. Pastikan aturan keamanan Firestore Anda memperbolehkan akses baca pada koleksi 'products'.
           </p>
            <p className="text-xs text-muted-foreground mt-4">{error.message}</p>
         </div>
@@ -241,7 +248,7 @@ export function ProductList() {
         <div className="text-center col-span-full py-12 border rounded-lg">
           <h3 className="text-xl font-semibold">Belum Ada Produk</h3>
           <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">
-            Saat ini belum ada produk digital yang tersedia. Silakan tambahkan produk pada database Firestore Anda di koleksi 'products'.
+            Saat ini belum ada produk digital yang tersedia di database Firestore. Silakan tambahkan produk pada koleksi 'products' di konsol Firebase Anda.
           </p>
         </div>
       );
