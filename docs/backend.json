@@ -8,33 +8,32 @@
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the project.",
-          "format": "uuid"
+          "description": "Unique identifier for the project."
         },
         "title": {
           "type": "string",
-          "description": "The title of the project."
+          "description": "Title of the project."
         },
         "description": {
           "type": "string",
-          "description": "A brief description of the project."
+          "description": "Description of the project."
         },
         "imageUrl": {
           "type": "string",
-          "description": "URL of the image representing the project.",
+          "description": "URL of the project's image.",
           "format": "uri"
         },
         "category": {
           "type": "string",
-          "description": "Category of the project (e.g., 'Konten TikTok', 'Kampanye Instagram')."
+          "description": "Category of the project (e.g., 'TikTok Content', 'Instagram Campaign')."
         },
-        "clientName": {
+        "client": {
           "type": "string",
-          "description": "The name of the client for the project."
+          "description": "Name of the client for the project."
         },
         "caseStudyUrl": {
           "type": "string",
-          "description": "URL to the detailed case study of the project (optional).",
+          "description": "URL to the project's case study (optional).",
           "format": "uri"
         }
       },
@@ -44,7 +43,7 @@
         "description",
         "imageUrl",
         "category",
-        "clientName"
+        "client"
       ]
     },
     "ContactSubmission": {
@@ -55,29 +54,28 @@
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the contact submission.",
-          "format": "uuid"
+          "description": "Unique identifier for the contact submission."
         },
         "name": {
           "type": "string",
-          "description": "The name of the person submitting the form."
+          "description": "Name of the person submitting the form."
         },
         "email": {
           "type": "string",
-          "description": "The email address of the person submitting the form.",
+          "description": "Email address of the person submitting the form.",
           "format": "email"
         },
         "companyName": {
           "type": "string",
-          "description": "The name of the company or UMKM."
+          "description": "Company name of the person submitting the form."
         },
         "message": {
           "type": "string",
-          "description": "The message content from the contact form."
+          "description": "Message from the person submitting the form."
         },
         "submissionDate": {
           "type": "string",
-          "description": "The date and time when the form was submitted.",
+          "description": "Date and time the form was submitted.",
           "format": "date-time"
         }
       },
@@ -94,28 +92,27 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "TeamMember",
       "type": "object",
-      "description": "Represents a team member profile for the Mood Lab website.",
+      "description": "Represents a team member at Mood Lab.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the team member.",
-          "format": "uuid"
+          "description": "Unique identifier for the team member."
         },
         "name": {
           "type": "string",
-          "description": "The name of the team member."
+          "description": "Name of the team member."
         },
         "title": {
           "type": "string",
-          "description": "The job title of the team member."
+          "description": "Job title of the team member."
         },
         "bio": {
           "type": "string",
-          "description": "A brief biography of the team member."
+          "description": "Biography of the team member."
         },
         "imageUrl": {
           "type": "string",
-          "description": "URL of the image representing the team member.",
+          "description": "URL of the team member's image.",
           "format": "uri"
         }
       },
@@ -126,13 +123,74 @@
         "bio",
         "imageUrl"
       ]
+    },
+    "DigitalProduct": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "DigitalProduct",
+      "type": "object",
+      "description": "Represents a digital product offered by Mood Lab.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the digital product."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the digital product."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the digital product."
+        },
+        "price": {
+          "type": "number",
+          "description": "Price of the digital product."
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "URL of the digital product's image.",
+          "format": "uri"
+        },
+        "productUrl": {
+          "type": "string",
+          "description": "URL where the product can be purchased.",
+          "format": "uri"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "description",
+        "price",
+        "imageUrl",
+        "productUrl"
+      ]
     }
   },
   "auth": {
-    "providers": []
+    "providers": [
+      "password",
+      "anonymous"
+    ]
   },
   "firestore": {
     "structure": [
+      {
+        "path": "/digitalProducts/{digitalProductId}",
+        "definition": {
+          "entityName": "DigitalProduct",
+          "schema": {
+            "$ref": "#/backend/entities/DigitalProduct"
+          },
+          "description": "Stores digital product information.",
+          "params": [
+            {
+              "name": "digitalProductId",
+              "description": "Unique identifier for the digital product."
+            }
+          ]
+        }
+      },
       {
         "path": "/projects/{projectId}",
         "definition": {
@@ -140,11 +198,11 @@
           "schema": {
             "$ref": "#/backend/entities/Project"
           },
-          "description": "Stores project information. Publicly readable, admin-only write.",
+          "description": "Stores project portfolio information.",
           "params": [
             {
               "name": "projectId",
-              "description": "The unique identifier of the project."
+              "description": "Unique identifier for the project."
             }
           ]
         }
@@ -156,11 +214,11 @@
           "schema": {
             "$ref": "#/backend/entities/ContactSubmission"
           },
-          "description": "Stores contact form submissions. Admin-only read and write.",
+          "description": "Stores contact form submissions.",
           "params": [
             {
               "name": "contactSubmissionId",
-              "description": "The unique identifier of the contact submission."
+              "description": "Unique identifier for the contact submission."
             }
           ]
         }
@@ -172,16 +230,16 @@
           "schema": {
             "$ref": "#/backend/entities/TeamMember"
           },
-          "description": "Stores team member information. Publicly readable, admin-only write.",
+          "description": "Stores team member information.",
           "params": [
             {
               "name": "teamMemberId",
-              "description": "The unique identifier of the team member."
+              "description": "Unique identifier for the team member."
             }
           ]
         }
       }
     ],
-    "reasoning": "The Firestore structure is designed to manage portfolio projects, contact form submissions, and team member information for the Mood Lab website. It prioritizes authorization independence by using path-based ownership for private data. Structural segregation ensures that each collection contains documents with similar security requirements. This design also accounts for listing operations (QAPs) by storing data in dedicated collections, making rules simple and secure.\n\nSpecifically:\n\n*   `projects`: Stores project data.\n*   `contactSubmissions`: Stores contact form submissions. Admin-only access.\n*   `teamMembers`: Stores team member information. Publicly readable but admin-writable."
+    "reasoning": "The Firestore structure is designed to manage digital products, projects, contact submissions, and team member information for Mood Lab. The core principle is to ensure authorization independence and simplify security rules.  Since user-specific private data is not present, and all data is generally public-facing content managed by administrators, a simple collection-based structure is sufficient. Each entity (Project, ContactSubmission, TeamMember, DigitalProduct) resides in its own top-level collection. This structural segregation simplifies rules and enables QAPs. There's no requirement for denormalization to achieve authorization independence in this scenario, as authorization will be handled via server-side logic (Cloud Functions) rather than client-side rules.\n\nThis design supports the required QAPs.  List operations are inherently safe because each collection contains only one type of data with consistent security needs.  Because all writes will be done via an authenticated admin (using a backend), the database structure allows for listing all documents in each collection, allowing the Mood Lab admin to have full content control."
   }
 }

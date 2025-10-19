@@ -1,103 +1,77 @@
+/**
+ * @fileoverview Firestore Security Rules for Mood Lab's digital product and portfolio management.
+ *
+ * Core Philosophy:
+ * This ruleset provides minimal authorization for the Mood Lab application.
+ * Read access is generally public. Write access is denied in the rules and
+ * must be handled via backend logic with elevated permissions.
+ *
+ * Data Structure:
+ * - /digitalProducts/{digitalProductId}: Stores information about digital products.
+ * - /projects/{projectId}: Stores project portfolio information.
+ * - /contactSubmissions/{contactSubmissionId}: Stores contact form submissions.
+ * - /teamMembers/{teamMemberId}: Stores team member information.
+ *
+ * Key Security Decisions:
+ * - Read access (get, list) is generally public for all collections, assuming
+ *   that all content is intended to be publicly viewable.
+ * - All write operations (create, update, delete) are explicitly denied in the rules,
+ *   requiring administrative access via a trusted backend environment (e.g., Cloud Functions).
+ * - The lack of user-specific data and the reliance on administrative backend writes
+ *   simplifies the ruleset and ensures a clear separation of concerns.
+ * - No data validation is performed in the rules themselves, as validation should
+ *   be handled by the backend before data is written to Firestore.
+ */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Allows public read access to projects and admin-only write access.
+     * @description Allows public read access to digital product information. All writes are denied.
+     * @path /digitalProducts/{digitalProductId}
+     * @allow (get, list): Any user can read digital product data.
+     * @deny (create, update, delete): All writes are denied; administrative access is required via the backend.
+     * @principle Allows public read access while restricting writes to a backend.
+     */
+    match /digitalProducts/{digitalProductId} {
+      allow get, list: if true;
+      allow create, update, delete: if false;
+    }
+
+    /**
+     * @description Allows public read access to project portfolio information. All writes are denied.
      * @path /projects/{projectId}
-     * @allow get, list: if true;
-     * @allow create: if false;
-     * @allow update: if false;
-     * @allow delete: if false;
-     * @principle Public read, admin-only write.
+     * @allow (get, list): Any user can read project data.
+     * @deny (create, update, delete): All writes are denied; administrative access is required via the backend.
+     * @principle Allows public read access while restricting writes to a backend.
      */
     match /projects/{projectId} {
       allow get, list: if true;
-      allow create, update, delete: if isAdmin();
+      allow create, update, delete: if false;
     }
 
     /**
-     * @description Restricts access to contact submissions to admins only.
+     * @description Allows public read access to contact form submissions. All writes are denied.
      * @path /contactSubmissions/{contactSubmissionId}
-     * @allow get: if isAdmin();
-     * @allow list: if isAdmin();
-     * @allow create: if isAdmin();
-     * @allow update: if isAdmin() && resource != null;
-     * @allow delete: if isAdmin() && resource != null;
-     * @principle Admin-only access for sensitive data.
+     * @allow (get, list): Any user can read contact submission data.
+     * @deny (create, update, delete): All writes are denied; administrative access is required via the backend.
+     * @principle Allows public read access while restricting writes to a backend.
      */
     match /contactSubmissions/{contactSubmissionId} {
-      allow get, list: if isAdmin();
-      allow create, update, delete: if isAdmin();
+      allow get, list: if true;
+      allow create, update, delete: if false;
     }
 
     /**
-     * @description Allows public read access to team members and admin-only write access.
+     * @description Allows public read access to team member information. All writes are denied.
      * @path /teamMembers/{teamMemberId}
-     * @allow get, list: if true;
-     * @allow create: if false;
-     * @allow update: if false;
-     * @allow delete: if false;
-     * @principle Public read, admin-only write.
+     * @allow (get, list): Any user can read team member data.
+     * @deny (create, update, delete): All writes are denied; administrative access is required via the backend.
+     * @principle Allows public read access while restricting writes to a backend.
      */
     match /teamMembers/{teamMemberId} {
       allow get, list: if true;
-      allow create, update, delete: if isAdmin();
-    }
-
-    /**
-     * @description Allows a user to manage their own transactions.
-     * @path /users/{userId}/transactions/{transactionId}
-     * @allow get: if isOwner(userId);
-     * @allow list: if isOwner(userId);
-     * @allow create: if request.auth.uid == userId && request.resource.data.userId == userId;
-     * @allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
-     * @allow delete: if isExistingOwner(userId);
-     * @principle Enforces document ownership for writes.
-     */
-    match /users/{userId}/transactions/{transactionId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.userId == userId;
-      allow update: if isOwner(userId) && request.resource.data.userId == userId;
-      allow delete: if isOwner(userId);
-    }
-
-    // ---- Helper functions ----
-
-    /**
-     * @description Checks if the current user is the owner of the resource.
-     * @param {string} userId The user ID to check against.
-     * @return {boolean} True if the user is the owner, false otherwise.
-     */
-    function isOwner(userId) {
-      return request.auth.uid == userId;
-    }
-
-    /**
-     * @description Checks if the current user is the owner of the resource and the resource exists.
-     * @param {string} userId The user ID to check against.
-     * @return {boolean} True if the user is the owner and the resource exists, false otherwise.
-     */
-    function isExistingOwner(userId) {
-      return isOwner(userId) && exists(resource.data.userId);
-    }
-
-    /**
-     * @description Checks if the user is signed in.
-     * @return {boolean} True if the user is signed in, false otherwise.
-     */
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    /**
-     * @description Checks if the current user is an admin.
-     * @return {boolean} True if the user is an admin, false otherwise.
-     */
-    function isAdmin() {
-      // TODO: Implement admin role check (e.g., from a custom claim).
-      return false;
+      allow create, update, delete: if false;
     }
   }
 }
