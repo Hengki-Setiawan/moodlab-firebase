@@ -230,7 +230,7 @@ export function ProductList() {
         <div className="text-center col-span-full py-12 border rounded-lg bg-destructive/10 border-destructive">
           <h3 className="text-xl font-semibold text-destructive-foreground">Akses Database Gagal</h3>
           <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">
-            Gagal mengambil data produk. Pastikan aturan keamanan Firestore Anda mengizinkan akses baca ke koleksi 'products'.
+            Gagal mengambil data produk. Pastikan aturan keamanan Firestore Anda mengizinkan akses baca publik ke koleksi 'products'.
           </p>
         </div>
       );
@@ -241,7 +241,7 @@ export function ProductList() {
         <div className="text-center col-span-full py-12 border rounded-lg">
           <h3 className="text-xl font-semibold">Belum Ada Produk</h3>
           <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">
-            Tidak ada produk yang ditemukan di database. Pastikan Anda sudah menambahkan produk ke koleksi 'products' di Firestore.
+            Tidak ada produk yang ditemukan di database Firestore. Pastikan Anda sudah menambahkan produk ke koleksi 'products' di konsol Firebase.
           </p>
         </div>
       );
