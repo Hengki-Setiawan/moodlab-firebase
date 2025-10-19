@@ -13,11 +13,12 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Data produk atau pengguna tidak lengkap' }, { status: 400 });
         }
         
-        // 1. Initialize with Admin SDK for privileged server-side access
         const adminApp = createFirebaseAdminApp();
         const firestore = getFirestore(adminApp);
         const ordersRef = firestore.collection('orders');
 
+        // This is the corrected type. We create an object that matches the structure
+        // for a *new* document, before the server timestamps are applied.
         const newOrder: Omit<Order, 'id' | 'createdAt' | 'updatedAt'> = {
             userId: user.uid,
             userName: user.displayName || 'N/A',
@@ -40,7 +41,6 @@ export async function POST(request: Request) {
         });
         const orderId = orderDocRef.id;
 
-        // 2. Prepare transaction details for Midtrans
         const parameter = {
             transaction_details: {
                 order_id: orderId,
@@ -65,14 +65,12 @@ export async function POST(request: Request) {
             }
         };
 
-        // 3. Create a Snap transaction
         const transaction = await snap.createTransaction(parameter);
         
         return NextResponse.json(transaction);
 
     } catch (error: any) {
         console.error('Error creating transaction:', error);
-        // Provide a more generic server error message to the client
         return NextResponse.json({ error: 'Terjadi kesalahan pada server saat membuat transaksi.' }, { status: 500 });
     }
 }
