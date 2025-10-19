@@ -1,8 +1,8 @@
 'use server';
 
 import { z } from 'zod';
-import { getFirestore, collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { initializeFirebase } from '@/firebase';
+import { initializeServerSideFirebase } from '@/firebase/server-init';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { revalidatePath } from 'next/cache';
 
 const contactSchema = z.object({
@@ -26,7 +26,7 @@ export async function submitContactForm(prevState: State, formData: FormData): P
   const validatedFields = contactSchema.safeParse({
     name: formData.get('name'),
     email: formData.get('email'),
-    companyName: formData.get('company'),
+    company: formData.get('company'),
     message: formData.get('message'),
   });
 
@@ -38,8 +38,7 @@ export async function submitContactForm(prevState: State, formData: FormData): P
   }
 
   try {
-    const { firestore } = initializeFirebase();
-    const db = getFirestore(firestore.app);
+    const { db } = initializeServerSideFirebase();
 
     await addDoc(collection(db, 'contactSubmissions'), {
       ...validatedFields.data,

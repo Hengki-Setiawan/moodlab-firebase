@@ -1,12 +1,11 @@
 'use server';
 
-import { initializeFirebase } from '@/firebase';
+import { initializeServerSideFirebase } from '@/firebase/server-init';
 import { getFirestore, collection, writeBatch } from 'firebase/firestore';
 import { dummyProducts } from './data';
 
 export async function seedProducts() {
-  const { firestore } = initializeFirebase();
-  const db = getFirestore(firestore.app);
+  const { db } = initializeServerSideFirebase();
   const productsCollection = collection(db, 'products');
 
   // Don't re-seed if products already exist
@@ -25,9 +24,8 @@ export async function seedProducts() {
 
   dummyProducts.forEach((product) => {
     // Firestore will auto-generate an ID if you use .add() via a batch
-    const docRef = collection(db, 'products');
-    // We create a new doc ref for each product to get a unique ID
-    batch.set(docRef.doc(), product);
+    const newDocRef = collection(db, 'products').doc();
+    batch.set(newDocRef, product);
   });
 
   try {
