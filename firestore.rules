@@ -2,122 +2,124 @@
  * @fileoverview Firestore Security Rules for Mood Lab Website
  *
  * Core Philosophy:
- * This ruleset enforces a combination of public read access for certain collections (projects, team members),
- * admin-only access for sensitive data (contact submissions), and user-ownership for private data (user transactions).
+ * This ruleset enforces a combination of public read access for certain collections (projects, teamMembers),
+ * strict admin-only access for sensitive data (contactSubmissions), and user-ownership for private data
+ * (user transactions).
  *
  * Data Structure:
- * - /projects/{projectId}: Publicly readable projects.
- * - /contactSubmissions/{contactSubmissionId}: Contact form submissions, restricted to admins.
- * - /teamMembers/{teamMemberId}: Publicly readable team member profiles.
- * - /users/{userId}/transactions/{transactionId}: User-specific transaction history, readable only by the user.
+ * - /projects/{projectId}: Public project data.
+ * - /contactSubmissions/{contactSubmissionId}: Contact form submissions.
+ * - /teamMembers/{teamMemberId}: Team member profiles.
+ * - /users/{userId}/transactions/{transactionId}: User-specific transaction data.
  *
  * Key Security Decisions:
- * - Publicly readable collections (projects, team members) are intended for general display. Writes are restricted.
- * - Contact submissions are highly sensitive and are therefore only accessible to authorized admins.
- * - User transactions are private and can only be accessed by the user who owns them.
+ * - Public Read Access: The 'projects' and 'teamMembers' collections are publicly readable.
+ * - Admin-Only Access: The 'contactSubmissions' collection is only accessible to admins.
+ * - User-Owned Transactions: Transaction data is stored in user-specific subcollections and is only
+ *   readable and writable by the respective user.
+ * - No User Listing: Listing all users is not permitted.
  *
  * Denormalization for Authorization:
- * - The `Transaction` documents nested under `/users/{userId}` MUST contain a `userId` field equal to the parent path's `userId`. This is validated on create and enforced as immutable on update.
+ *  To simplify and optimize security rules, the `transactions` documents stores `userId` field.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Grants public read access to projects, but restricts write access.
-     * @path /projects/{projectId}
-     * @allow get, list: if true;
-     * @allow create: if false;
-     * @allow update: if false;
-     * @allow delete: if false;
-     * @principle Public read, restricted write.
-     */
-    match /projects/{projectId} {
-      allow get: if true;
-      allow list: if true;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
-    }
-
-    /**
-     * @description Restricts access to contact submissions to authenticated users only.
-     * @path /contactSubmissions/{contactSubmissionId}
-     * @allow get: if false;
-     * @allow list: if false;
-     * @allow create: if false;
-     * @allow update: if false;
-     * @allow delete: if false;
-     * @principle Admin-only access.
-     */
-    match /contactSubmissions/{contactSubmissionId} {
-      allow get: if false;
-      allow list: if false;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
-    }
-
-    /**
-     * @description Grants public read access to team members, but restricts write access.
-     * @path /teamMembers/{teamMemberId}
-     * @allow get, list: if true;
-     * @allow create: if false;
-     * @allow update: if false;
-     * @allow delete: if false;
-     * @principle Public read, restricted write.
-     */
-    match /teamMembers/{teamMemberId} {
-      allow get: if true;
-      allow list: if true;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
-    }
-
-    /**
-     * @description Grants access to a user's transactions only to the user themselves.
-     * @path /users/{userId}/transactions/{transactionId}
-     * @allow get, list: if isOwner(userId);
-     * @allow create: if request.resource.data.userId == userId;
-     * @allow update: if isExistingOwner(userId) && (request.resource.data.userId == resource.data.userId);
-     * @allow delete: if isExistingOwner(userId);
-     * @principle Enforces document ownership for reads and writes.
-     */
-    match /users/{userId}/transactions/{transactionId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if request.resource.data.userId == userId;
-      allow update: if isExistingOwner(userId) && (request.resource.data.userId == resource.data.userId);
-      allow delete: if isExistingOwner(userId);
-    }
-
-    // --- Helper functions ---
-
-    /**
      * @description Checks if the request is authenticated.
-     * @return {bool} True if the request is authenticated, false otherwise.
+     * @returns {boolean} True if the request is authenticated, false otherwise.
      */
     function isSignedIn() {
       return request.auth != null;
     }
 
     /**
-     * @description Checks if the user ID matches the authenticated user's ID.
-     * @param {string} userId The user ID to check against.
-     * @return {bool} True if the user ID matches the authenticated user's ID, false otherwise.
+     * @description Checks if the request is made by the owner of the resource.
+     * @param {string} userId - The user ID to compare with the request's authentication UID.
+     * @returns {boolean} True if the request is made by the owner, false otherwise.
      */
     function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
+        return isSignedIn() && request.auth.uid == userId;
     }
 
     /**
-     * @description Checks if the user is the owner of an existing document.
-     * @param {string} userId The user ID to check against.
-     * @return {bool} True if the user ID matches the authenticated user's ID and the document exists, false otherwise.
+     * @description Checks if the request is made by the existing owner of the resource, implying the document exists.
+     * @param {string} userId - The user ID to compare with the request's authentication UID.
+     * @returns {boolean} True if the request is made by the owner, false otherwise.
      */
     function isExistingOwner(userId) {
-      return isOwner(userId) && resource != null;
+        return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * @description Rules for the /projects collection. Publicly readable, admin-only write.
+     * @path /projects/{projectId}
+     * @allow (get, list) Anyone can read project data.
+     * @allow (create) An admin can create a new project.
+     * @deny (create) A non-admin user cannot create a project.
+     * @deny (update) A non-admin user cannot update a project.
+     * @deny (delete) A non-admin user cannot delete a project.
+     * @principle Allows public reads and restricts writes to admins.
+     */
+    match /projects/{projectId} {
+      allow get, list: if true;
+      allow create: if false; // TODO: Implement admin check
+      allow update: if false; // TODO: Implement admin check
+      allow delete: if false; // TODO: Implement admin check
+    }
+
+    /**
+     * @description Rules for the /contactSubmissions collection. Admin-only read and write.
+     * @path /contactSubmissions/{contactSubmissionId}
+     * @allow (create) An admin can create a new contact submission.
+     * @allow (get) An admin can read contact submission data.
+     * @allow (list) An admin can list contact submissions.
+     * @deny (create) A non-admin user cannot create a contact submission.
+     * @deny (update) A non-admin user cannot update a contact submission.
+     * @deny (delete) A non-admin user cannot delete a contact submission.
+     * @principle Restricts all access to admins.
+     */
+    match /contactSubmissions/{contactSubmissionId} {
+      allow get, list: if false; // TODO: Implement admin check
+      allow create: if false; // TODO: Implement admin check
+      allow update: if false; // TODO: Implement admin check
+      allow delete: if false; // TODO: Implement admin check
+    }
+
+    /**
+     * @description Rules for the /teamMembers collection. Publicly readable, admin-only write.
+     * @path /teamMembers/{teamMemberId}
+     * @allow (get, list) Anyone can read team member data.
+     * @allow (create) An admin can create a new team member.
+     * @deny (create) A non-admin user cannot create a team member.
+     * @deny (update) A non-admin user cannot update a team member.
+     * @deny (delete) A non-admin user cannot delete a team member.
+     * @principle Allows public reads and restricts writes to admins.
+     */
+    match /teamMembers/{teamMemberId} {
+      allow get, list: if true;
+      allow create: if false; // TODO: Implement admin check
+      allow update: if false; // TODO: Implement admin check
+      allow delete: if false; // TODO: Implement admin check
+    }
+
+    /**
+     * @description Rules for the /users/{userId}/transactions collection. Readable only by the user.
+     * @path /users/{userId}/transactions/{transactionId}
+     * @allow (create) A user can create a transaction with their user ID.
+     * @allow (get) A user can read their own transaction data.
+     * @allow (list) A user can list their own transaction data.
+     * @deny (create) A user cannot create a transaction for another user.
+     * @deny (update) A user cannot update another user's transaction.
+     * @deny (delete) A user cannot delete another user's transaction.
+     * @principle Enforces document ownership for all operations.
+     */
+    match /users/{userId}/transactions/{transactionId} {
+      allow get, list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+      allow delete: if isExistingOwner(userId);
     }
   }
 }
