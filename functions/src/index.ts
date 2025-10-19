@@ -16,7 +16,7 @@ export const createMidtransTransaction = functions.https.onCall(
     if (!context.auth) {
       throw new functions.https.HttpsError(
         "unauthenticated",
-        "Anda harus login untuk melakukan transaksi."
+        "Anda harus login untuk melakukan transaksi.",
       );
     }
 
