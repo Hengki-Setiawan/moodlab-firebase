@@ -8,7 +8,7 @@ import { useFirestore, useCollection, useMemoFirebase, useUser } from '@/firebas
 import { collection, query as firestoreQuery, type CollectionReference } from 'firebase/firestore';
 import type { DigitalProduct } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
-import { getPaymentToken } from '@/app/actions';
+import { getPaymentToken, sendPurchaseConfirmationEmail } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 
@@ -44,7 +44,7 @@ function BuyButton({ product }: { product: DigitalProduct }) {
     const router = useRouter();
 
     const handleBuy = () => {
-        if (!user) {
+        if (!user || !user.email) {
             toast({
                 title: "Anda Belum Login",
                 description: "Silakan login terlebih dahulu untuk melakukan pembelian.",
@@ -58,7 +58,7 @@ function BuyButton({ product }: { product: DigitalProduct }) {
             const userDetails = {
                 id: user.uid,
                 name: user.displayName || 'Pengguna',
-                email: user.email || 'no-email@example.com'
+                email: user.email,
             };
             const { token, error } = await getPaymentToken(product, userDetails);
 
@@ -77,8 +77,17 @@ function BuyButton({ product }: { product: DigitalProduct }) {
                         console.log('success', result);
                         toast({
                             title: "Pembayaran Berhasil!",
-                            description: "Terima kasih atas pembelian Anda. Produk digital Anda akan segera tersedia.",
+                            description: "Terima kasih! Email konfirmasi telah dikirimkan.",
                         });
+
+                        // Send confirmation email
+                        await sendPurchaseConfirmationEmail(
+                          userDetails.name, 
+                          userDetails.email, 
+                          product,
+                          result.order_id
+                        );
+                        
                         router.push('/akun');
                     },
                     onPending: function(result: any){
@@ -146,11 +155,12 @@ export function ProductList() {
         document.body.appendChild(script);
     }
     
-    // The cleanup function is not strictly necessary if you want the script to be available globally
-    // but can be useful in strict React environments.
     return () => {
-      // You might not want to remove the script on component unmount
-      // if other components might need it.
+      // Cleanup script if component unmounts
+      if (script && script.parentNode) {
+        // It's often better to leave the script loaded, but this is an option
+        // script.parentNode.removeChild(script); 
+      }
     }
   }, [toast]);
 
