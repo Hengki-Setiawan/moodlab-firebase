@@ -1,77 +1,43 @@
-/**
- * @file Firestore Security Rules for Mood Lab website.
- *
- * @description This ruleset allows public read access to all collections (digitalProducts, projects, contactSubmissions, teamMembers).
- * All write operations (create, update, delete) are denied. These collections are intended to be managed by authenticated admins via backend logic (Cloud Functions).
- *
- * @dataStructure
- * - /digitalProducts/{digitalProductId}: Stores digital product information.
- * - /projects/{projectId}: Stores project portfolio information.
- * - /contactSubmissions/{contactSubmissionId}: Stores contact form submissions.
- * - /teamMembers/{teamMemberId}: Stores team member information.
- *
- * @keySecurityDecisions
- * - Public read access for all collections.
- * - No client-side write access. All writes are intended to be handled by authenticated admins via backend logic.
- */
+
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    /**
-     * @description Allows public read access to digital product information. No write access is allowed.
-     * @path /digitalProducts/{digitalProductId}
-     * @allow (get, list): Any user can read digital product data.
-     * @deny (create, update, delete): No user can create, update, or delete digital product data via client-side rules.
-     * @principle Public read, admin-only writes.
-     */
-    match /digitalProducts/{digitalProductId} {
-      allow get, list: if true;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
-    }
-
-    /**
-     * @description Allows public read access to project portfolio information. No write access is allowed.
-     * @path /projects/{projectId}
-     * @allow (get, list): Any user can read project data.
-     * @deny (create, update, delete): No user can create, update, or delete project data via client-side rules.
-     * @principle Public read, admin-only writes.
-     */
+  
+    // Public collections that anyone can read. Writes are restricted.
     match /projects/{projectId} {
-      allow get, list: if true;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow read: if true;
+      allow write: if false; 
     }
 
-    /**
-     * @description Allows public read access to contact form submissions. No write access is allowed.
-     * @path /contactSubmissions/{contactSubmissionId}
-     * @allow (get, list): Any user can read contact submission data.
-     * @deny (create, update, delete): No user can create, update, or delete contact submission data via client-side rules.
-     * @principle Public read, admin-only writes.
-     */
-    match /contactSubmissions/{contactSubmissionId} {
-      allow get, list: if true;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+    match /digitalProducts/{productId} {
+      allow read: if true;
+      allow write: if false;
+    }
+    
+    match /teamMembers/{memberId} {
+      allow read: if true;
+      allow write: if false;
     }
 
-    /**
-     * @description Allows public read access to team member information. No write access is allowed.
-     * @path /teamMembers/{teamMemberId}
-     * @allow (get, list): Any user can read team member data.
-     * @deny (create, update, delete): No user can create, update, or delete team member data via client-side rules.
-     * @principle Public read, admin-only writes.
-     */
-    match /teamMembers/{teamMemberId} {
-      allow get, list: if true;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+    // Contact submissions should only be created. No one should read them from the client.
+    match /contactSubmissions/{submissionId} {
+      allow read: if false;
+      allow create: if true;
+      allow update, delete: if false;
+    }
+    
+    // Users can only read their own orders.
+    // Order creation is handled by server actions, but we can allow client-side creation for authenticated users.
+    match /orders/{orderId} {
+      allow read: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      allow update, delete: if false;
+    }
+
+    // Fallback rule: deny all other access
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }
