@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
@@ -48,13 +48,16 @@ export function RegisterForm() {
   const handleRegister = async (data: FormValues) => {
     setIsLoading(true);
     try {
-      await createUserWithEmailAndPassword(auth, data.email, data.password);
+      const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
+      // Kirim email verifikasi
+      await sendEmailVerification(userCredential.user);
+      
       toast({
         title: 'Pendaftaran Berhasil!',
-        description: 'Akun Anda telah dibuat. Anda akan dialihkan...',
+        description: 'Akun Anda telah dibuat. Silakan periksa email Anda untuk verifikasi.',
       });
-      router.push('/akun');
-      router.refresh(); // Refresh the page to update header state
+      // Arahkan ke halaman login agar mereka bisa masuk setelah verifikasi
+      router.push('/login');
     } catch (error) {
       console.error(`Registration error:`, error);
       let errorMessage = 'Terjadi kesalahan. Silakan coba lagi.';

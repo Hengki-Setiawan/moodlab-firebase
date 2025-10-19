@@ -19,6 +19,30 @@ declare global {
     }
 }
 
+async function sendReceipt(customerEmail: string, product: Product) {
+    try {
+        const response = await fetch('/api/send-receipt', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ customerEmail, product }),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Gagal mengirim struk.');
+        }
+
+        console.log("Struk berhasil dikirim.");
+
+    } catch (error) {
+        console.error("Error sending receipt:", error);
+        // Kita tidak ingin mengganggu user jika pengiriman struk gagal,
+        // jadi kita hanya log error di console.
+    }
+}
+
 function ProductSkeleton() {
     return (
         <Card className="flex flex-col">
@@ -50,7 +74,6 @@ export function ProductList() {
 
   useEffect(() => {
     if (!app) {
-      // Tunggu sampai app Firebase siap
       return;
     }
 
@@ -87,10 +110,21 @@ export function ProductList() {
 
 
   const handleBuy = async (product: Product) => {
+    if (isUserLoading) return;
+
     if (!user) {
         toast({
             title: 'Harap Login',
             description: 'Anda harus login terlebih dahulu untuk melakukan pembelian.',
+            variant: 'destructive',
+        });
+        return;
+    }
+
+    if (!user.emailVerified) {
+        toast({
+            title: 'Verifikasi Email Diperlukan',
+            description: 'Silakan verifikasi email Anda terlebih dahulu sebelum membeli.',
             variant: 'destructive',
         });
         return;
@@ -135,8 +169,12 @@ export function ProductList() {
             window.snap.pay(token, {
                 onSuccess: function(result: any){
                   console.log('Payment success!', result);
-                  toast({ title: "Pembayaran Berhasil!", description: "Terima kasih, produk akan segera tersedia di akun Anda."});
+                  toast({ title: "Pembayaran Berhasil!", description: "Struk pembelian sedang dikirim ke email Anda."});
                   setLoadingProductId(null);
+                  // Kirim email setelah sukses
+                  if(user.email) {
+                    sendReceipt(user.email, product);
+                  }
                 },
                 onPending: function(result: any){
                   console.log('Payment pending.', result);
