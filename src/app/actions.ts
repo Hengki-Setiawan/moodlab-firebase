@@ -174,10 +174,21 @@ export async function clearSession() {
 
 // --- EMAIL ACTIONS ---
 
-const resend = new Resend(process.env.RESEND_API_KEY);
 const fromEmail = process.env.EMAIL_FROM_ADDRESS || 'Mood Lab <noreply@moodlab.id>';
 
+let resend: Resend | null = null;
+if (process.env.RESEND_API_KEY) {
+  resend = new Resend(process.env.RESEND_API_KEY);
+} else {
+  console.warn("RESEND_API_KEY is not set. Email sending will be disabled. Please create a .env.local file and add your Resend API key.");
+}
+
+
 export async function sendWelcomeEmail(name: string, email: string) {
+  if (!resend) {
+    console.log(`Skipping welcome email to ${email} because email sending is disabled.`);
+    return { success: false, message: 'Email sending is disabled on the server.' };
+  }
   try {
     await resend.emails.send({
       from: fromEmail,
@@ -194,6 +205,10 @@ export async function sendWelcomeEmail(name: string, email: string) {
 }
 
 export async function sendPurchaseConfirmationEmail(userName: string, userEmail: string, product: DigitalProduct, orderId: string) {
+   if (!resend) {
+    console.log(`Skipping purchase confirmation email to ${userEmail} because email sending is disabled.`);
+    return { success: false, message: 'Email sending is disabled on the server.' };
+  }
   try {
     await resend.emails.send({
       from: fromEmail,
