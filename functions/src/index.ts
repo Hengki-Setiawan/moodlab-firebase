@@ -2,17 +2,10 @@
 import * as functions from "firebase-functions";
 import * as midtransClient from "midtrans-client";
 
-// Anda perlu men-deploy fungsi ini dengan nama 'createMidtransTransaction'
+// Fungsi ini akan di-deploy dengan nama 'createMidtransTransaction'
 export const createMidtransTransaction = functions.https.onCall(
   async (data, context) => {
-    // data: {
-    //   orderId: string,
-    //   amount: number,
-    //   productName: string,
-    //   productId: string
-    // }
-    // context: berisi info user jika sudah login
-
+    // Memastikan user sudah login untuk melakukan transaksi
     if (!context.auth) {
       throw new functions.https.HttpsError(
         "unauthenticated",
@@ -20,8 +13,8 @@ export const createMidtransTransaction = functions.https.onCall(
       );
     }
 
-    // Inisialisasi snap API
-    // Pastikan Anda sudah mengatur environment variables di Firebase
+    // Inisialisasi snap API dari Midtrans
+    // Pastikan environment variables sudah diatur di Firebase
     const snap = new midtransClient.Snap({
       isProduction: false, // Ganti ke true saat mode produksi
       serverKey: functions.config().midtrans.server_key,
@@ -33,15 +26,17 @@ export const createMidtransTransaction = functions.https.onCall(
         order_id: data.orderId,
         gross_amount: data.amount,
       },
-      item_details: [{
-        id: data.productId,
-        price: data.amount,
-        quantity: 1,
-        name: data.productName,
-      }],
+      item_details: [
+        {
+          id: data.productId,
+          price: data.amount,
+          quantity: 1,
+          name: data.productName,
+        },
+      ],
       customer_details: {
         email: context.auth.token.email,
-        // Anda bisa menambahkan nama atau nomor telepon jika ada
+        // Anda bisa menambahkan detail lain jika ada
       },
     };
 
@@ -50,9 +45,9 @@ export const createMidtransTransaction = functions.https.onCall(
       const transactionToken = transaction.token;
       console.log("transactionToken:", transactionToken);
       return {token: transactionToken};
-    } catch (e) {
-      const error = e as Error;
-      console.error("Error membuat transaksi Midtrans:", error);
-      throw new functions.https.HttpsError("internal", error.message);
+    } catch (e: any) {
+      console.error("Error membuat transaksi Midtrans:", e);
+      throw new functions.https.HttpsError("internal", e.message);
     }
-  });
+  },
+);
