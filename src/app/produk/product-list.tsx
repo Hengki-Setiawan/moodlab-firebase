@@ -1,15 +1,16 @@
 'use client';
 
 import Image from 'next/image';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useFirestore, useCollection, useMemoFirebase, useUser } from '@/firebase';
 import { collection, query as firestoreQuery, type CollectionReference } from 'firebase/firestore';
 import type { DigitalProduct } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { ShoppingCart } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 function ProductSkeleton() {
   return (
@@ -34,6 +35,9 @@ function ProductSkeleton() {
 export function ProductList() {
   const firestore = useFirestore();
   const { toast } = useToast();
+  const { user, isUserLoading } = useUser();
+  const router = useRouter();
+  const [isBuying, setIsBuying] = useState<string | null>(null);
 
   const productsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -42,12 +46,46 @@ export function ProductList() {
 
   const { data: products, isLoading, error } = useCollection<DigitalProduct>(productsQuery);
 
-  const handleBuy = () => {
-    toast({
-        title: "Fitur Dalam Pengembangan",
-        description: "Fitur pembelian akan segera hadir!",
-    });
-  }
+  const handleBuy = async (product: DigitalProduct) => {
+    if (!user) {
+        toast({
+            title: "Harap Login",
+            description: "Anda harus login terlebih dahulu untuk melakukan pembelian.",
+            variant: "destructive"
+        });
+        router.push('/login');
+        return;
+    }
+
+    setIsBuying(product.id);
+    try {
+        const response = await fetch('/api/create-transaction', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ product, user }),
+        });
+
+        const transaction = await response.json();
+
+        if (response.ok) {
+            window.location.href = transaction.redirect_url;
+        } else {
+            throw new Error(transaction.error || 'Gagal membuat transaksi.');
+        }
+
+    } catch (err: any) {
+        console.error("Payment error:", err);
+        toast({
+            title: "Pembayaran Gagal",
+            description: err.message || "Terjadi kesalahan saat memulai pembayaran.",
+            variant: "destructive",
+        });
+    } finally {
+        setIsBuying(null);
+    }
+  };
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('id-ID', {
@@ -57,7 +95,7 @@ export function ProductList() {
     }).format(price);
   };
 
-  if (isLoading) {
+  if (isLoading || isUserLoading) {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
         {[...Array(4)].map((_, i) => <ProductSkeleton key={i} />)}
@@ -110,9 +148,9 @@ export function ProductList() {
           </CardContent>
           <CardFooter className="flex justify-between items-center pt-4">
             <p className="font-semibold text-lg">{formatPrice(product.price)}</p>
-            <Button onClick={handleBuy}>
-                <ShoppingCart className="mr-2 h-4 w-4" />
-                Beli
+            <Button onClick={() => handleBuy(product)} disabled={isBuying === product.id}>
+                {isBuying === product.id ? 'Memproses...' : <ShoppingCart className="mr-2 h-4 w-4" />}
+                {isBuying === product.id ? '' : 'Beli'}
             </Button>
           </CardFooter>
         </Card>

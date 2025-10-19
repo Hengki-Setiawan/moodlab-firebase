@@ -1,150 +1,72 @@
 /**
- * @fileoverview Firestore Security Rules for Mood Lab application.
+ * @file Firestore Security Rules
+ * @description This ruleset defines access control for the Mood Lab application's Firestore database.
  *
  * Core Philosophy:
- * This ruleset provides open read access to all collections while restricting write access.
- * Only authenticated users can create, update, or delete documents.
- * Write operations are generally limited to only existing documents (update, delete)
- * to prevent accidental data loss and unauthorized modifications.
+ * The ruleset provides public read access to projects, digital products, and team members, while restricting write access to authenticated users. Contact submissions are publicly writable, but listing is denied.
  *
  * Data Structure:
- * - /digitalProducts/{digitalProductId}: Stores digital product information.
- * - /projects/{projectId}: Stores project portfolio information.
- * - /contactSubmissions/{contactSubmissionId}: Stores contact form submissions.
- * - /teamMembers/{teamMemberId}: Stores team member information.
- * - /orders/{orderId}: Stores customer order information.
+ * The database consists of four top-level collections:
+ *   - /digitalProducts/{digitalProductId}: Stores information about digital products.
+ *   - /projects/{projectId}: Stores information about portfolio projects.
+ *   - /contactSubmissions/{contactSubmissionId}: Stores contact form submissions.
+ *   - /teamMembers/{teamMemberId}: Stores information about team members.
  *
  * Key Security Decisions:
- * - Public read access for all collections to allow easy display of content.
- * - Authenticated user required for any write operation.
- * - No user-specific data trees are defined, so ownership is not applicable, however, userId is present in orders so that can be implemented.
- * - The rules do not enforce a strict schema.
- * - Enforce that the user placing order owns it
- *
- * Denormalization for Authorization:
- *  - The 'Order' entity is denormalized with a 'userId' field, enabling secure access based on user identity.
+ * - Projects, Digital Products, and Team Members are publicly readable.
+ * - Contact submissions can be created by anyone, but listing is not allowed.
+ * - Write operations (create, update, delete) are generally disallowed, reflecting a content management system where data is managed via other administrative interfaces.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Checks if the user is signed in.
-     * @return {boolean} True if the user is signed in, false otherwise.
-     */
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    /**
-     * @description Checks if the user ID matches the authenticated user's ID.
-     * @param {string} userId The user ID to check.
-     * @return {boolean} True if the user ID matches the authenticated user's ID, false otherwise.
-     */
-    function isOwner(userId) {
-        return request.auth.uid == userId;
-    }
-
-    /**
-     * @description Checks if the user is the owner of an existing document.
-     * @param {string} userId The user ID of the owner.
-     * @return {boolean} True if the user is the owner and the document exists, false otherwise.
-     */
-    function isExistingOwner(userId) {
-      return isOwner(userId) && resource != null;
-    }
-
-    /**
-     * @description Security rules for the digitalProducts collection.
+     * @description Grants public read access to digital products and restricts write access.
      * @path /digitalProducts/{digitalProductId}
-     * @allow (get, list): Any user can read digital product information.
-     * @allow (create): Only authenticated users can create digital products.
-     * @allow (update, delete): Only authenticated users can update or delete digital products.
-     * @deny (create): Unauthenticated users cannot create digital products.
-     * @deny (update, delete): Unauthenticated users cannot update or delete digital products.
-     * @principle Allows public read access while restricting write access to authenticated users.
+     * @allow (get, list) User can read any digital product.
+     * @deny (create, update, delete) User cannot create, update, or delete digital products without authentication.
+     * @principle Allows public reads while restricting writes to prevent unauthorized data modification.
      */
     match /digitalProducts/{digitalProductId} {
-      allow get: if true;
-      allow list: if true;
-      allow create: if isSignedIn();
-      allow update: if isSignedIn() && resource != null;
-      allow delete: if isSignedIn() && resource != null;
+      allow get, list: if true;
+      allow create, update, delete: if false;
     }
 
     /**
-     * @description Security rules for the projects collection.
+     * @description Grants public read access to projects and restricts write access.
      * @path /projects/{projectId}
-     * @allow (get, list): Any user can read project information.
-     * @allow (create): Only authenticated users can create projects.
-     * @allow (update, delete): Only authenticated users can update or delete projects.
-     * @deny (create): Unauthenticated users cannot create projects.
-     * @deny (update, delete): Unauthenticated users cannot update or delete projects.
-     * @principle Allows public read access while restricting write access to authenticated users.
+     * @allow (get, list) User can read any project.
+     * @deny (create, update, delete) User cannot create, update, or delete projects without authentication.
+     * @principle Allows public reads while restricting writes to prevent unauthorized data modification.
      */
     match /projects/{projectId} {
-      allow get: if true;
-      allow list: if true;
-      allow create: if isSignedIn();
-      allow update: if isSignedIn() && resource != null;
-      allow delete: if isSignedIn() && resource != null;
+      allow get, list: if true;
+      allow create, update, delete: if false;
     }
 
     /**
-     * @description Security rules for the contactSubmissions collection.
+     * @description Allows anyone to create a contact submission, but restricts listing and other modifications.
      * @path /contactSubmissions/{contactSubmissionId}
-     * @allow (get, list): Any user can read contact submission information.
-     * @allow (create): Only authenticated users can create contact submissions.
-     * @allow (update, delete): Only authenticated users can update or delete contact submissions.
-     * @deny (create): Unauthenticated users cannot create contact submissions.
-     * @deny (update, delete): Unauthenticated users cannot update or delete contact submissions.
-     * @principle Allows public read access while restricting write access to authenticated users.
+     * @allow (create) Any user, signed in or not, can create a contact submission.
+     * @deny (get, list, update, delete) Users cannot list, update, or delete contact submissions without authentication.
+     * @principle Enables contact form submissions while preventing unauthorized access to submission data.
      */
     match /contactSubmissions/{contactSubmissionId} {
-      allow get: if true;
-      allow list: if true;
-      allow create: if isSignedIn();
-      allow update: if isSignedIn() && resource != null;
-      allow delete: if isSignedIn() && resource != null;
+      allow create: if true;
+      allow get, list, update, delete: if false;
     }
 
     /**
-     * @description Security rules for the teamMembers collection.
+     * @description Grants public read access to team members and restricts write access.
      * @path /teamMembers/{teamMemberId}
-     * @allow (get, list): Any user can read team member information.
-     * @allow (create): Only authenticated users can create team members.
-     * @allow (update, delete): Only authenticated users can update or delete team members.
-     * @deny (create): Unauthenticated users cannot create team members.
-     * @deny (update, delete): Unauthenticated users cannot update or delete team members.
-     * @principle Allows public read access while restricting write access to authenticated users.
+     * @allow (get, list) User can read any team member.
+     * @deny (create, update, delete) User cannot create, update, or delete team members without authentication.
+     * @principle Allows public reads while restricting writes to prevent unauthorized data modification.
      */
     match /teamMembers/{teamMemberId} {
-      allow get: if true;
-      allow list: if true;
-      allow create: if isSignedIn();
-      allow update: if isSignedIn() && resource != null;
-      allow delete: if isSignedIn() && resource != null;
-    }
-
-    /**
-     * @description Security rules for the orders collection.
-     * @path /orders/{orderId}
-     * @allow (get): Any user can get an order.
-     * @allow (list): Any user can list orders.
-     * @allow (create): Only authenticated users can create orders.
-     * @allow (update): Only the owner of the order can update it.
-     * @allow (delete): Only the owner of the order can delete it.
-     * @deny (create): Unauthenticated users cannot create orders.
-     * @deny (update): Non-owners cannot update orders.
-     * @deny (delete): Non-owners cannot delete orders.
-     * @principle Allows public read access while restricting write access to authenticated users and enforcing ownership.
-     */
-    match /orders/{orderId} {
-      allow get: if true;
-      allow list: if true;
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update: if isExistingOwner(resource.data.userId);
-      allow delete: if isExistingOwner(resource.data.userId);
+      allow get, list: if true;
+      allow create, update, delete: if false;
     }
   }
 }
