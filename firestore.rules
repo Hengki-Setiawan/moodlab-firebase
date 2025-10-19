@@ -1,75 +1,113 @@
 /**
- * @fileoverview Firestore Security Rules for Mood Lab.
+ * @fileoverview Firestore Security Rules for Mood Lab Website
  *
- * Core Philosophy: This ruleset provides public read access to all collections
- * (`/projects`, `/contactSubmissions`, `/teamMembers`, `/products`)
- * and restricts write access to prevent unauthorized data modification.
+ * Core Philosophy:
+ * This ruleset enforces role-based access control for managing website content.
+ * Public read access is granted for project and team member information, while
+ * administrative privileges are required for managing contact submissions and
+ * modifying project and team member data.
  *
- * Data Structure: The database consists of four top-level collections.  There
- * are no subcollections or user-specific data trees in this initial schema.
+ * Data Structure:
+ * - /projects/{projectId}: Stores project details. Publicly readable, admin-only write.
+ * - /contactSubmissions/{contactSubmissionId}: Stores contact form submissions. Admin-only read and write.
+ * - /teamMembers/{teamMemberId}: Stores team member profiles. Publicly readable, admin-only write.
+ * - /roles_admin/{userId}: Indicates admin status. Document existence grants admin rights.
  *
  * Key Security Decisions:
- * - Public read access is granted to all collections to allow the Mood Lab website
- *   to display project portfolios, team member information, and product details.
- * - All write operations are explicitly denied to prevent unauthorized data changes.
- *   Future iterations may introduce authentication and role-based access control for
- *   content management.
- * - Denormalization is not required because access control is not based on
- *   hierarchical data or user relationships.
- *
- * Note: These rules are for prototyping purposes and do not include any
- * authentication or authorization checks for write operations.
+ * - Public listing is enabled for projects and team members, as this data is intended to be publicly visible.
+ * - Strict admin-only access is enforced for contact submissions to protect user privacy.
+ * - Admin privileges are determined by the presence of a document in the `/roles_admin/{userId}` collection.
+ * - Data validation is minimized in this prototyping phase, focusing on authorization.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Allows public read access to project data and denies all write access.
+     * @description Grants public read access and admin-only write access to projects.
      * @path /projects/{projectId}
-     * @allow (get, list) Anyone can read project data.
-     * @deny (create, update, delete) No one can create, update, or delete project data.
-     * @principle Public read, restricted writes for project portfolios.
+     * @allow get, list: if true;
+     * @allow create: if isAdmin();
+     * @allow update: if isAdmin() && resource != null;
+     * @allow delete: if isAdmin() && resource != null;
+     * @deny create: if !isAdmin();
+     * @deny update: if !isAdmin();
+     * @deny delete: if !isAdmin();
+     * @principle Allows anyone to read projects, but only admins can create, update, or delete them.
      */
     match /projects/{projectId} {
       allow get, list: if true;
-      allow create, update, delete: if false;
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
     }
 
     /**
-     * @description Allows public read access to contact submission data and denies all write access.
+     * @description Restricts access to contact submissions to admins only.
      * @path /contactSubmissions/{contactSubmissionId}
-     * @allow (get, list) Anyone can read contact submission data.
-     * @deny (create, update, delete) No one can create, update, or delete contact submission data.
-     * @principle Public read, restricted writes for contact form submissions.
+     * @allow get, list: if isAdmin();
+     * @allow create: if isAdmin();
+     * @allow update: if isAdmin() && resource != null;
+     * @allow delete: if isAdmin() && resource != null;
+     * @deny get, list: if !isAdmin();
+     * @deny create: if !isAdmin();
+     * @deny update: if !isAdmin();
+     * @deny delete: if !isAdmin();
+     * @principle Enforces strict admin-only access for managing sensitive contact submission data.
      */
     match /contactSubmissions/{contactSubmissionId} {
-      allow get, list: if true;
-      allow create, update, delete: if false;
+      allow get, list: if isAdmin();
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
     }
 
     /**
-     * @description Allows public read access to team member data and denies all write access.
+     * @description Grants public read access and admin-only write access to team members.
      * @path /teamMembers/{teamMemberId}
-     * @allow (get, list) Anyone can read team member data.
-     * @deny (create, update, delete) No one can create, update, or delete team member data.
-     * @principle Public read, restricted writes for team member profiles.
+     * @allow get, list: if true;
+     * @allow create: if isAdmin();
+     * @allow update: if isAdmin() && resource != null;
+     * @allow delete: if isAdmin() && resource != null;
+     * @deny create: if !isAdmin();
+     * @deny update: if !isAdmin();
+     * @deny delete: if !isAdmin();
+     * @principle Allows anyone to read team members, but only admins can create, update, or delete them.
      */
     match /teamMembers/{teamMemberId} {
       allow get, list: if true;
-      allow create, update, delete: if false;
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
     }
 
     /**
-     * @description Allows public read access to product data and denies all write access.
-     * @path /products/{productId}
-     * @allow (get, list) Anyone can read product data.
-     * @deny (create, update, delete) No one can create, update, or delete product data.
-     * @principle Public read, restricted writes for product listings.
+     * @description Determines admin status based on the existence of a document in this collection.
+     * @path /roles_admin/{userId}
      */
-    match /products/{productId} {
-      allow get, list: if true;
-      allow create, update, delete: if false;
+    match /roles_admin/{userId} {
+         allow get: if false;
+         allow list: if false; // Prevent listing all admin roles
+         allow create: if false; // Admin role creation should be handled server-side or via a privileged function
+         allow update: if false; // No updates allowed, existence is the indicator
+         allow delete: if false; // Admin role deletion should be handled server-side or via a privileged function
+    }
+
+
+    /**
+     * @description Determines if the current user is an admin based on the existence of a document in the `/roles_admin/{userId}` collection.
+     * @return {bool} True if the user is an admin, false otherwise.
+     */
+    function isAdmin() {
+        return exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+    }
+
+    /**
+     * @description Checks if the user is signed in.
+     * @return {bool} True if the user is signed in, false otherwise.
+     */
+    function isSignedIn() {
+      return request.auth != null;
     }
   }
 }

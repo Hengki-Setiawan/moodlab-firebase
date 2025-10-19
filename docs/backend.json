@@ -4,11 +4,12 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Project",
       "type": "object",
-      "description": "Represents a portfolio project for Mood Lab.",
+      "description": "Represents a portfolio project for the Mood Lab website.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the project."
+          "description": "Unique identifier for the project.",
+          "format": "uuid"
         },
         "title": {
           "type": "string",
@@ -16,24 +17,24 @@
         },
         "description": {
           "type": "string",
-          "description": "A detailed description of the project."
+          "description": "A brief description of the project."
         },
         "imageUrl": {
           "type": "string",
-          "description": "URL to the project's image.",
+          "description": "URL of the image representing the project.",
           "format": "uri"
+        },
+        "category": {
+          "type": "string",
+          "description": "Category of the project (e.g., 'Konten TikTok', 'Kampanye Instagram')."
         },
         "clientName": {
           "type": "string",
-          "description": "The name of the client for whom the project was done."
-        },
-        "serviceCategory": {
-          "type": "string",
-          "description": "The service category of the project (e.g., 'Content TikTok', 'Kampanye Instagram')."
+          "description": "The name of the client for the project."
         },
         "caseStudyUrl": {
           "type": "string",
-          "description": "URL to the case study of the project, if available.",
+          "description": "URL to the detailed case study of the project (optional).",
           "format": "uri"
         }
       },
@@ -42,19 +43,20 @@
         "title",
         "description",
         "imageUrl",
-        "clientName",
-        "serviceCategory"
+        "category",
+        "clientName"
       ]
     },
     "ContactSubmission": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "ContactSubmission",
       "type": "object",
-      "description": "Represents a contact form submission.",
+      "description": "Represents a contact form submission from the Mood Lab website.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the contact submission."
+          "description": "Unique identifier for the contact submission.",
+          "format": "uuid"
         },
         "name": {
           "type": "string",
@@ -67,15 +69,15 @@
         },
         "companyName": {
           "type": "string",
-          "description": "The name of the company/UMKM."
+          "description": "The name of the company or UMKM."
         },
         "message": {
           "type": "string",
-          "description": "The message submitted through the contact form."
+          "description": "The message content from the contact form."
         },
         "submissionDate": {
           "type": "string",
-          "description": "Date and time when the form was submitted.",
+          "description": "The date and time when the form was submitted.",
           "format": "date-time"
         }
       },
@@ -92,11 +94,12 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "TeamMember",
       "type": "object",
-      "description": "Represents a team member at Mood Lab.",
+      "description": "Represents a team member profile for the Mood Lab website.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the team member."
+          "description": "Unique identifier for the team member.",
+          "format": "uuid"
         },
         "name": {
           "type": "string",
@@ -112,7 +115,7 @@
         },
         "imageUrl": {
           "type": "string",
-          "description": "URL to the team member's image.",
+          "description": "URL of the image representing the team member.",
           "format": "uri"
         }
       },
@@ -123,46 +126,6 @@
         "bio",
         "imageUrl"
       ]
-    },
-    "Product": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Product",
-      "type": "object",
-      "description": "Represents a digital product for sale.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the product."
-        },
-        "name": {
-          "type": "string",
-          "description": "The name of the product."
-        },
-        "description": {
-          "type": "string",
-          "description": "A detailed description of the product."
-        },
-        "price": {
-          "type": "number",
-          "description": "The price of the product."
-        },
-        "imageUrl": {
-          "type": "string",
-          "description": "URL to the product's image.",
-          "format": "uri"
-        },
-        "fileUrl": {
-          "type": "string",
-          "description": "URL to the downloadable file (e.g., Google Drive link).",
-          "format": "uri"
-        },
-        "category": {
-          "type": "string",
-          "description": "The category of the digital product.",
-          "enum": ["E-book", "Template", "SFX", "Green Screen"]
-        }
-      },
-      "required": ["id", "name", "description", "price", "imageUrl", "fileUrl", "category"]
     }
   },
   "auth": {
@@ -180,11 +143,11 @@
           "schema": {
             "$ref": "#/backend/entities/Project"
           },
-          "description": "Stores portfolio project data.",
+          "description": "Stores project information. Publicly readable, admin-only write.",
           "params": [
             {
               "name": "projectId",
-              "description": "The unique identifier for the project."
+              "description": "The unique identifier of the project."
             }
           ]
         }
@@ -196,11 +159,11 @@
           "schema": {
             "$ref": "#/backend/entities/ContactSubmission"
           },
-          "description": "Stores contact form submissions.",
+          "description": "Stores contact form submissions. Admin-only read and write.",
           "params": [
             {
               "name": "contactSubmissionId",
-              "description": "The unique identifier for the contact submission."
+              "description": "The unique identifier of the contact submission."
             }
           ]
         }
@@ -212,32 +175,32 @@
           "schema": {
             "$ref": "#/backend/entities/TeamMember"
           },
-          "description": "Stores team member data.",
+          "description": "Stores team member information. Publicly readable, admin-only write.",
           "params": [
             {
               "name": "teamMemberId",
-              "description": "The unique identifier for the team member."
+              "description": "The unique identifier of the team member."
             }
           ]
         }
       },
       {
-        "path": "/products/{productId}",
+        "path": "/roles_admin/{userId}",
         "definition": {
-          "entityName": "Product",
+          "entityName": "RoleAdmin",
           "schema": {
-            "$ref": "#/backend/entities/Product"
+            "$ref": "#/backend/entities/RoleAdmin"
           },
-          "description": "Stores digital product data.",
+          "description": "Marks a user as an admin. Existence of the document grants admin rights.  No data is stored in the document itself (existence over content).",
           "params": [
             {
-              "name": "productId",
-              "description": "The unique identifier for the product."
+              "name": "userId",
+              "description": "The unique identifier of the user."
             }
           ]
         }
       }
     ],
-    "reasoning": "The Firestore structure is designed to manage content for the Mood Lab website, focusing on projects, contact submissions, and team members. The structure prioritizes simplicity and security, leveraging Structural Segregation and Path-Based ownership. A new 'products' collection has been added to store digital product information. \n\n*   `/projects`: Stores project data. This collection is flat, as there are no specific ownership requirements. All project documents share the same security posture.\n*   `/contactSubmissions`: Stores contact form submissions.  Like Projects, this is a flat collection since there's no specified hierarchical authorization.\n*   `/teamMembers`: Stores team member data.  This is also a flat collection.\n*   `/products`: Stores digital product data. This is a flat collection for easy querying of all available products.\n\nAuthorization Independence: The structure does not require denormalization, as authorization is not based on hierarchical data. Instead, access is controlled at the collection level.\n\nQAPs:  Segregation is used to support QAPs. Each collection (`projects`, `contactSubmissions`, `teamMembers`, `products`) has its own security rules tailored to the data it contains, ensuring that list operations can be securely performed without exposing unauthorized information."
+    "reasoning": "The Firestore structure is designed to manage portfolio projects, contact form submissions, and team member information for the Mood Lab website. It prioritizes authorization independence by using path-based ownership for private data. Structural segregation ensures that each collection contains documents with similar security requirements. This design also accounts for listing operations (QAPs) by storing data in dedicated collections, making rules simple and secure.\n\nSpecifically:\n\n*   `projects`: Stores project data.\n*   `contactSubmissions`: Stores contact form submissions. Admin-only access.\n*   `teamMembers`: Stores team member information. Publicly readable but admin-writable.\n*   `roles_admin`: Uses the 'Existence over Content' pattern for defining admin roles. The presence of a document with the user's UID in this collection grants admin privileges."
   }
 }
