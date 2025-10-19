@@ -5,13 +5,14 @@ import Image from 'next/image';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useUser } from '@/firebase/provider';
+import { useUser, useFirestore } from '@/firebase/provider';
 import { useToast } from '@/hooks/use-toast';
 import type { Product } from '@/lib/types';
 import { ShoppingCart, Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getDatabase, ref, onValue, off } from 'firebase/database';
 import { useFirebaseApp } from '@/firebase/provider';
+import { collection, doc, setDoc } from 'firebase/firestore';
 
 declare global {
     interface Window {
@@ -38,10 +39,25 @@ async function sendReceipt(customerEmail: string, product: Product) {
 
     } catch (error) {
         console.error("Error sending receipt:", error);
-        // Kita tidak ingin mengganggu user jika pengiriman struk gagal,
-        // jadi kita hanya log error di console.
     }
 }
+
+async function saveTransaction(
+    firestore: any, 
+    userId: string, 
+    transactionData: any
+) {
+    if (!firestore || !userId) return;
+    try {
+        const transactionRef = doc(collection(firestore, `users/${userId}/transactions`), transactionData.orderId);
+        await setDoc(transactionRef, transactionData);
+        console.log("Transaksi berhasil disimpan ke Firestore.");
+    } catch (error) {
+        console.error("Gagal menyimpan transaksi ke Firestore:", error);
+        // We log the error but don't show it to the user to not interrupt the flow
+    }
+}
+
 
 function ProductSkeleton() {
     return (
@@ -69,6 +85,7 @@ export function ProductList() {
   const [error, setError] = useState<string | null>(null);
   const [loadingProductId, setLoadingProductId] = useState<string | null>(null);
   const { user, isUserLoading } = useUser();
+  const firestore = useFirestore();
   const { toast } = useToast();
   const app = useFirebaseApp();
 
@@ -142,8 +159,9 @@ export function ProductList() {
     setLoadingProductId(product.id);
 
     try {
-        const transactionData = {
-            orderId: `order-${product.id}-${Date.now()}`,
+        const orderId = `order-${product.id}-${Date.now()}`;
+        const transactionPayload = {
+            orderId: orderId,
             amount: product.price,
             productName: product.name,
             productId: product.id,
@@ -155,7 +173,7 @@ export function ProductList() {
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify(transactionData),
+            body: JSON.stringify(transactionPayload),
         });
 
         if (!response.ok) {
@@ -170,20 +188,50 @@ export function ProductList() {
                 onSuccess: function(result: any){
                   console.log('Payment success!', result);
                   toast({ title: "Pembayaran Berhasil!", description: "Struk pembelian sedang dikirim ke email Anda."});
-                  setLoadingProductId(null);
-                  // Kirim email setelah sukses
+                  
+                  const transactionToSave = {
+                      orderId: result.order_id,
+                      productName: product.name,
+                      amount: parseFloat(result.gross_amount),
+                      transactionTime: result.transaction_time,
+                      status: 'success' as const,
+                      userId: user.uid,
+                  };
+                  saveTransaction(firestore, user.uid, transactionToSave);
+                  
                   if(user.email) {
                     sendReceipt(user.email, product);
                   }
+                  setLoadingProductId(null);
                 },
                 onPending: function(result: any){
                   console.log('Payment pending.', result);
                   toast({ title: "Menunggu Pembayaran", description: "Selesaikan pembayaran Anda."});
+
+                   const transactionToSave = {
+                      orderId: result.order_id,
+                      productName: product.name,
+                      amount: parseFloat(result.gross_amount),
+                      transactionTime: new Date().toISOString(),
+                      status: 'pending' as const,
+                      userId: user.uid,
+                  };
+                  saveTransaction(firestore, user.uid, transactionToSave);
                   setLoadingProductId(null);
                 },
                 onError: function(result: any){
                   console.error('Payment error!', result);
                   toast({ title: "Pembayaran Gagal", description: "Terjadi kesalahan. Silakan coba lagi.", variant: 'destructive' });
+                  
+                  const transactionToSave = {
+                      orderId: orderId, // Use the generated orderId
+                      productName: product.name,
+                      amount: product.price,
+                      transactionTime: new Date().toISOString(),
+                      status: 'failure' as const,
+                      userId: user.uid,
+                  };
+                  saveTransaction(firestore, user.uid, transactionToSave);
                   setLoadingProductId(null);
                 },
                 onClose: function(){
