@@ -1,42 +1,34 @@
 'use server';
 
 import { initializeServerSideFirebase } from '@/firebase/server-init';
-import { getFirestore, collection, writeBatch } from 'firebase/firestore';
+import { ref, set } from 'firebase/database';
 import { dummyProducts } from './data';
 
 export async function seedProducts() {
   const { db } = initializeServerSideFirebase();
-  const productsCollection = collection(db, 'products');
-
-  // Don't re-seed if products already exist
-  // Note: In a real app, you might want a more robust check.
-  // For this starter, we are not implementing one.
-  // const snapshot = await getDocs(productsCollection);
-  // if (!snapshot.empty) {
-  //   console.log('Products collection already has documents. Seeding skipped.');
-  //   return {
-  //     success: false,
-  //     message: 'Database already seeded.',
-  //   };
-  // }
   
-  const batch = writeBatch(db);
+  // In RTDB, we write to a path. We'll store products under the 'products' node.
+  const productsRef = ref(db, 'products');
 
-  dummyProducts.forEach((product) => {
-    // Firestore will auto-generate an ID if you use .add() via a batch
-    const newDocRef = collection(db, 'products').doc();
-    batch.set(newDocRef, product);
-  });
+  // We'll convert the array of products into an object,
+  // where keys are auto-generated IDs. This is a common RTDB pattern.
+  const productsObject = dummyProducts.reduce((acc, product, index) => {
+    // We can create a simple key or a more complex one
+    const key = `prod_${Date.now()}_${index}`;
+    acc[key] = product;
+    return acc;
+  }, {} as { [key: string]: any });
 
   try {
-    await batch.commit();
-    console.log('Successfully seeded database with products.');
+    // set() overwrites all data at the specified path.
+    await set(productsRef, productsObject);
+    console.log('Successfully seeded Realtime Database with products.');
     return {
       success: true,
-      message: `${dummyProducts.length} products have been added to Firestore.`,
+      message: `${dummyProducts.length} products have been added to the Realtime Database.`,
     };
   } catch (error) {
-    console.error('Error seeding database:', error);
+    console.error('Error seeding Realtime Database:', error);
     if (error instanceof Error) {
         return { success: false, message: `Error: ${error.message}` };
     }

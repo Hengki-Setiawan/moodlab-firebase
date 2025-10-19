@@ -6,14 +6,14 @@ import Script from 'next/script';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useUser, useDatabase, useRtdbList, useMemoFirebase } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import type { Product } from '@/lib/types';
 import { ShoppingCart, Loader2 } from 'lucide-react';
-import { collection } from 'firebase/firestore';
+import { ref } from 'firebase/database';
 import { Skeleton } from '@/components/ui/skeleton';
+import { seedDatabase } from '../actions';
 
-// You need to declare this so TypeScript knows about the snap object
 declare global {
     interface Window {
         snap: any;
@@ -43,16 +43,44 @@ function ProductSkeleton() {
 export function ProductList() {
   const [isMidtransReady, setMidtransReady] = useState(false);
   const [loadingProductId, setLoadingProductId] = useState<string | null>(null);
+  const [isSeeding, setIsSeeding] = useState(false);
   const { user, isUserLoading } = useUser();
   const { toast } = useToast();
-  const firestore = useFirestore();
+  const database = useDatabase();
 
-  const productsCollection = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return collection(firestore, 'products');
-  }, [firestore]);
+  const productsRef = useMemoFirebase(() => {
+    if (!database) return null;
+    return ref(database, 'products');
+  }, [database]);
 
-  const { data: products, isLoading: isLoadingProducts } = useCollection<Product>(productsCollection);
+  const { data: products, isLoading: isLoadingProducts, error } = useRtdbList<Product>(productsRef);
+
+  const handleSeedDb = async () => {
+    setIsSeeding(true);
+    try {
+        const result = await seedDatabase();
+        if (result.success) {
+            toast({
+                title: "Database Diisi!",
+                description: result.message || "Produk awal telah ditambahkan.",
+            });
+        } else {
+            toast({
+                title: "Gagal Mengisi Database",
+                description: result.message || "Tindakan ini mungkin sudah pernah dilakukan.",
+                variant: 'destructive',
+            });
+        }
+    } catch (e: any) {
+        toast({
+            title: "Error",
+            description: e.message || "Terjadi kesalahan saat mengisi database.",
+            variant: 'destructive',
+        });
+    } finally {
+        setIsSeeding(false);
+    }
+  }
 
   const handleBuy = async (product: Product) => {
     if (!user) {
@@ -144,6 +172,19 @@ export function ProductList() {
       )
   }
 
+  // Handle permission error
+  if (error) {
+      return (
+        <div className="text-center col-span-full py-12 border rounded-lg bg-destructive/10 border-destructive">
+          <h3 className="text-xl font-semibold text-destructive-foreground">Akses Ditolak</h3>
+          <p className="text-muted-foreground mt-2">
+            Aturan keamanan database Anda saat ini tidak mengizinkan pembacaan data. <br/>
+            Silakan perbarui aturan Realtime Database Anda di Firebase Console.
+          </p>
+        </div>
+      )
+  }
+
   return (
     <>
       <Script
@@ -151,54 +192,59 @@ export function ProductList() {
         data-client-key={process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY}
         onLoad={() => setMidtransReady(true)}
       />
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-        {products && products.length > 0 && products.map((product) => (
-          <Card key={product.id} className="flex flex-col">
-            <CardHeader className="p-0">
-              <Image
-                src={product.imageUrl}
-                alt={product.name}
-                width={600}
-                height={400}
-                className="object-cover w-full h-64 rounded-t-lg"
-                data-ai-hint={product.imageHint || 'product image'}
-              />
-            </CardHeader>
-            <CardContent className="p-6 flex-grow">
-              <Badge variant="secondary" className="mb-2">{product.category}</Badge>
-              <h3 className="font-headline text-xl font-semibold">{product.name}</h3>
-              <p className="text-muted-foreground mt-2 text-sm">{product.description}</p>
-            </CardContent>
-            <CardFooter className="p-6 pt-0 flex justify-between items-center">
-              <p className="text-xl font-bold text-primary">
-                {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(product.price)}
-              </p>
-              <Button 
-                onClick={() => handleBuy(product)} 
-                disabled={!isMidtransReady || isUserLoading || !!loadingProductId}
-              >
-                {loadingProductId === product.id ? (
-                    <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Memproses...
-                    </>
-                ) : (
-                    <>
-                        <ShoppingCart className="mr-2 h-4 w-4" />
-                        Beli Sekarang
-                    </>
-                )}
-              </Button>
-            </CardFooter>
-          </Card>
-        ))}
-      </div>
-      {products && products.length === 0 && !isLoadingProducts && (
+
+    {products && products.length > 0 ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            {products.map((product) => (
+                <Card key={product.id} className="flex flex-col">
+                    <CardHeader className="p-0">
+                    <Image
+                        src={product.imageUrl}
+                        alt={product.name}
+                        width={600}
+                        height={400}
+                        className="object-cover w-full h-64 rounded-t-lg"
+                        data-ai-hint={product.imageHint || 'product image'}
+                    />
+                    </CardHeader>
+                    <CardContent className="p-6 flex-grow">
+                    <Badge variant="secondary" className="mb-2">{product.category}</Badge>
+                    <h3 className="font-headline text-xl font-semibold">{product.name}</h3>
+                    <p className="text-muted-foreground mt-2 text-sm">{product.description}</p>
+                    </CardContent>
+                    <CardFooter className="p-6 pt-0 flex justify-between items-center">
+                    <p className="text-xl font-bold text-primary">
+                        {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(product.price)}
+                    </p>
+                    <Button 
+                        onClick={() => handleBuy(product)} 
+                        disabled={!isMidtransReady || isUserLoading || !!loadingProductId}
+                    >
+                        {loadingProductId === product.id ? (
+                            <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Memproses...
+                            </>
+                        ) : (
+                            <>
+                                <ShoppingCart className="mr-2 h-4 w-4" />
+                                Beli Sekarang
+                            </>
+                        )}
+                    </Button>
+                    </CardFooter>
+                </Card>
+            ))}
+        </div>
+      ) : (
         <div className="text-center col-span-full py-12 border rounded-lg">
-          <h3 className="text-xl font-semibold">Belum Ada Produk</h3>
-          <p className="text-muted-foreground mt-2">
-            Saat ini belum ada produk yang tersedia. Silakan cek kembali nanti.
+          <h3 className="text-xl font-semibold">Database Produk Kosong</h3>
+          <p className="text-muted-foreground mt-2 mb-4">
+            Klik tombol di bawah untuk mengisi database Anda dengan produk awal.
           </p>
+          <Button onClick={handleSeedDb} disabled={isSeeding}>
+            {isSeeding ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Mengisi...</> : 'Isi Database Produk'}
+          </Button>
         </div>
       )}
     </>

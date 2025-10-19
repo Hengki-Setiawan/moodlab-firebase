@@ -1,6 +1,6 @@
 // IMPORTANT: This file should ONLY be imported by server-side modules ('use server').
-import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
+import { initializeApp, getApps, getApp } from 'firebase/app';
+import { getDatabase } from 'firebase/database';
 import { firebaseConfig } from './config';
 
 /**
@@ -9,7 +9,7 @@ import { firebaseConfig } from './config';
  */
 export function initializeServerSideFirebase() {
   const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-  const db = getFirestore(app);
+  const db = getDatabase(app);
 
   return { app, db };
 }
