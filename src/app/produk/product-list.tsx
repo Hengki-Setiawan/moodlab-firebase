@@ -1,12 +1,21 @@
 'use client';
 
 import Image from 'next/image';
+import { useState, useTransition, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query as firestoreQuery, type CollectionReference } from 'firebase/firestore';
 import type { DigitalProduct } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import { getPaymentToken } from '@/app/actions';
+import { useToast } from '@/hooks/use-toast';
+
+declare global {
+  interface Window {
+    snap: any;
+  }
+}
 
 function ProductSkeleton() {
   return (
@@ -27,8 +36,65 @@ function ProductSkeleton() {
   );
 }
 
+function BuyButton({ product }: { product: DigitalProduct }) {
+    const [isPending, startTransition] = useTransition();
+    const { toast } = useToast();
+
+    const handleBuy = () => {
+        startTransition(async () => {
+            const { token, error } = await getPaymentToken(product);
+
+            if (error) {
+                toast({
+                    title: "Pembayaran Gagal",
+                    description: error,
+                    variant: "destructive"
+                });
+                return;
+            }
+
+            if (token) {
+                window.snap.pay(token, {
+                    onSuccess: function(result: any){
+                        console.log('success', result);
+                        toast({
+                            title: "Pembayaran Berhasil!",
+                            description: "Terima kasih atas pembelian Anda.",
+                        });
+                    },
+                    onPending: function(result: any){
+                        console.log('pending', result);
+                        toast({
+                            title: "Pembayaran Tertunda",
+                            description: "Menunggu pembayaran Anda selesai.",
+                        });
+                    },
+                    onError: function(result: any){
+                        console.log('error', result);
+                        toast({
+                            title: "Pembayaran Gagal",
+                            description: "Terjadi kesalahan saat memproses pembayaran.",
+                            variant: "destructive",
+                        });
+                    },
+                    onClose: function(){
+                        console.log('customer closed the popup without finishing the payment');
+                    }
+                });
+            }
+        });
+    };
+
+    return (
+        <Button onClick={handleBuy} disabled={isPending}>
+            {isPending ? 'Memproses...' : 'Beli Sekarang'}
+        </Button>
+    )
+}
+
 export function ProductList() {
   const firestore = useFirestore();
+  const { toast } = useToast();
 
   const productsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -36,6 +102,31 @@ export function ProductList() {
   }, [firestore]);
 
   const { data: products, isLoading, error } = useCollection<DigitalProduct>(productsQuery);
+  
+  useEffect(() => {
+    const clientKey = process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY;
+    if (!clientKey) {
+        console.error("Midtrans client key is not set.");
+        toast({
+            title: "Konfigurasi Error",
+            description: "Kunci klien untuk pembayaran tidak ditemukan.",
+            variant: "destructive"
+        });
+        return;
+    }
+    
+    const script = document.createElement('script');
+    script.src = "https://app.sandbox.midtrans.com/snap/snap.js"; // Use sandbox for development
+    script.setAttribute('data-client-key', clientKey);
+    script.async = true;
+    
+    document.body.appendChild(script);
+    
+    return () => {
+      document.body.removeChild(script);
+    }
+  }, [toast]);
+
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('id-ID', {
@@ -98,7 +189,7 @@ export function ProductList() {
           </CardContent>
           <CardFooter className="flex justify-between items-center pt-4">
             <p className="font-semibold text-lg">{formatPrice(product.price)}</p>
-            <Button>Beli Sekarang</Button>
+            <BuyButton product={product} />
           </CardFooter>
         </Card>
       ))}
