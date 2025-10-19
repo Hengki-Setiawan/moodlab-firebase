@@ -2,21 +2,16 @@
 
 import { firebaseConfig } from '@/firebase/config';
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getDatabase } from 'firebase/database';
+import { getAuth, Auth } from 'firebase/auth';
+import { getDatabase, Database } from 'firebase/database';
 
 // IMPORTANT: DO NOT MODIFY THIS FUNCTION
-export function initializeFirebase() {
+export function initializeFirebase(): { firebaseApp: FirebaseApp; auth: Auth; database: Database } {
   const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-  return getSdks(app);
-}
-
-export function getSdks(firebaseApp: FirebaseApp) {
-  return {
-    firebaseApp,
-    auth: getAuth(firebaseApp),
-    database: getDatabase(firebaseApp)
-  };
+  const auth = getAuth(app);
+  const database = getDatabase(app);
+  
+  return { firebaseApp: app, auth, database };
 }
 
 export * from './provider';
