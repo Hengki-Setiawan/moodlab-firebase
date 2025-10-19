@@ -1,10 +1,9 @@
 import type { NavItem, Service, TeamMember, Value } from './types';
-import { Video, Megaphone, Lightbulb, ShoppingCart } from 'lucide-react';
+import { Video, Megaphone, Lightbulb } from 'lucide-react';
 
 export const navItems: NavItem[] = [
   { label: 'Home', href: '/' },
   { label: 'Tentang Kami', href: '/tentang-kami' },
-  { label: 'Produk Digital', href: '/produk' },
   { label: 'Portofolio', href: '/portofolio' },
   { label: 'Kontak', href: '/kontak' },
 ];
@@ -30,13 +29,6 @@ export const services: Service[] = [
     longDescription: 'Bingung bagaimana cara terhubung dengan pasar muda? Kami menyediakan sesi konsultasi mendalam untuk menganalisis posisi merek Anda, memahami audiens, dan merancang roadmap strategi yang actionable untuk pertumbuhan jangka panjang.',
     icon: Lightbulb,
     image: 'service-strategy'
-  },
-  {
-    title: 'Penjualan Produk Digital',
-    description: 'E-books, kursus, dan lainnya.',
-    longDescription: 'Ubah keahlian Anda menjadi sumber pendapatan. Kami membantu UMKM dalam membuat, mengemas, dan menjual produk digital seperti e-book, kursus online, atau template, membuka aliran pendapatan baru untuk bisnis Anda.',
-    icon: ShoppingCart,
-    image: 'service-products'
   },
 ];
 

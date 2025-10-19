@@ -76,7 +76,7 @@ export default function Home() {
                 Solusi lengkap untuk pertumbuhan merek Anda di era digital.
               </p>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {services.map((service, index) => (
                 <Card key={index} className="flex flex-col text-center items-center hover:shadow-lg transition-shadow duration-300 animate-in fade-in slide-in-from-bottom-4 duration-500" style={{ animationDelay: `${index * 100}ms` }}>
                   <CardHeader>

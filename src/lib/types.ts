@@ -13,17 +13,6 @@ export type Service = {
   image: string;
 };
 
-export type Product = {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  imageUrl: string;
-  imageHint?: string;
-  fileUrl: string;
-  category: string;
-};
-
 export type Project = {
   id: string;
   title: string;

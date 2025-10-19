@@ -126,54 +126,10 @@
         "bio",
         "imageUrl"
       ]
-    },
-    "Transaction": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Transaction",
-      "type": "object",
-      "description": "Represents a user's transaction for a digital product.",
-      "properties": {
-        "orderId": {
-          "type": "string",
-          "description": "The unique order ID from Midtrans."
-        },
-        "productName": {
-          "type": "string",
-          "description": "Name of the purchased product."
-        },
-        "amount": {
-          "type": "number",
-          "description": "The transaction amount."
-        },
-        "transactionTime": {
-          "type": "string",
-          "format": "date-time",
-          "description": "Timestamp of the transaction."
-        },
-        "status": {
-          "type": "string",
-          "description": "The status of the transaction (e.g., 'success', 'pending', 'failure')."
-        },
-        "userId": {
-          "type": "string",
-          "description": "The UID of the user who made the transaction."
-        }
-      },
-      "required": [
-        "orderId",
-        "productName",
-        "amount",
-        "transactionTime",
-        "status",
-        "userId"
-      ]
     }
   },
   "auth": {
-    "providers": [
-      "password",
-      "anonymous"
-    ]
+    "providers": []
   },
   "firestore": {
     "structure": [
@@ -224,28 +180,8 @@
             }
           ]
         }
-      },
-      {
-        "path": "/users/{userId}/transactions/{transactionId}",
-        "definition": {
-          "entityName": "Transaction",
-          "schema": {
-            "$ref": "#/backend/entities/Transaction"
-          },
-          "description": "Stores a user's transaction history. Readable only by the user.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The user's unique ID."
-            },
-            {
-              "name": "transactionId",
-              "description": "The transaction's unique ID (can be the orderId)."
-            }
-          ]
-        }
       }
     ],
-    "reasoning": "The Firestore structure is designed to manage portfolio projects, contact form submissions, and team member information for the Mood Lab website. It prioritizes authorization independence by using path-based ownership for private data. Structural segregation ensures that each collection contains documents with similar security requirements. This design also accounts for listing operations (QAPs) by storing data in dedicated collections, making rules simple and secure.\n\nSpecifically:\n\n*   `projects`: Stores project data.\n*   `contactSubmissions`: Stores contact form submissions. Admin-only access.\n*   `teamMembers`: Stores team member information. Publicly readable but admin-writable.\n*   `/users/{userId}/transactions`: A subcollection to store the transaction history for each user, ensuring that a user can only read their own transactions."
+    "reasoning": "The Firestore structure is designed to manage portfolio projects, contact form submissions, and team member information for the Mood Lab website. It prioritizes authorization independence by using path-based ownership for private data. Structural segregation ensures that each collection contains documents with similar security requirements. This design also accounts for listing operations (QAPs) by storing data in dedicated collections, making rules simple and secure.\n\nSpecifically:\n\n*   `projects`: Stores project data.\n*   `contactSubmissions`: Stores contact form submissions. Admin-only access.\n*   `teamMembers`: Stores team member information. Publicly readable but admin-writable."
   }
 }
