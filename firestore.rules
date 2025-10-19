@@ -1,83 +1,118 @@
 /**
- * @fileoverview Firestore Security Rules for Mood Lab.
+ * @fileoverview Firestore Security Rules for Mood Lab application.
  *
- * Core Philosophy: This ruleset provides public read access to all collections
- * (digitalProducts, projects, contactSubmissions, and teamMembers), assuming
- * all data is public-facing content. Write access is denied at the rules level,
- * with the intention that writes will be handled securely via a backend (e.g., Cloud Functions).
+ * Core Philosophy:
+ * This ruleset provides public read access to all collections while restricting write access.
+ * Only authenticated users can create, update, or delete documents in any of the collections,
+ * and they can only perform these operations if they own the document.
  *
- * Data Structure: The Firestore database consists of four top-level collections:
- * /digitalProducts/{digitalProductId}
- * /projects/{projectId}
- * /contactSubmissions/{contactSubmissionId}
- * /teamMembers/{teamMemberId}
+ * Data Structure:
+ * The database consists of top-level collections for 'digitalProducts', 'projects',
+ * 'contactSubmissions', 'teamMembers', and 'orders'.
  *
  * Key Security Decisions:
- * - Public read access is granted to all collections.
- * - All write access (create, update, delete) is explicitly denied.
- * - This configuration is suitable when writes are exclusively managed by a
- *   trusted backend environment and not directly by client applications.
- * - No data denormalization is needed as the rules are simple and don't rely
- *   on complex authorization logic.
+ * - Public read access is enabled for all collections to allow easy data retrieval for the website.
+ * - Write access is restricted to authenticated users only, with ownership enforced.
+ * - The rules do NOT enforce a specific data schema during writes to allow for rapid prototyping and iteration.
+ * - The ContactSubmission collection captures leads, it should have an ownerId
+ * - Orders should be secured by user ID so they can only see their own orders
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Grants public read access to digital products, but denies all writes.
+     * @description Allows public read access to digital products, but restricts write access to authenticated users who own the document.
      * @path /digitalProducts/{digitalProductId}
-     * @allow (get, list) Any user can read digital product information.
-     * @deny (create, update, delete) No user can create, update, or delete digital product information through direct client access.
-     * @principle Allows public reads, but restricts all writes, assuming a backend handles data modification.
+     * @allow (get, list)
+     * @allow (create) - Authenticated user creates a new digital product with their user ID as the ownerId.
+     * @allow (update, delete) - Authenticated user updates or deletes a digital product they own.
+     * @deny (create) - Unauthenticated user attempts to create a digital product.
+     * @deny (update, delete) - Unauthenticated user attempts to update or delete a digital product.
+     * @principle Allows public reads, but enforces document ownership for writes.
      */
     match /digitalProducts/{digitalProductId} {
       allow get, list: if true;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow create: if isSignedIn() && request.resource.data.id == digitalProductId;
+      allow update, delete: if isExistingOwner(resource.data.id);
     }
 
     /**
-     * @description Grants public read access to projects, but denies all writes.
+     * @description Allows public read access to projects, but restricts write access to authenticated users who own the document.
      * @path /projects/{projectId}
-     * @allow (get, list) Any user can read project information.
-     * @deny (create, update, delete) No user can create, update, or delete project information through direct client access.
-     * @principle Allows public reads, but restricts all writes, assuming a backend handles data modification.
+     * @allow (get, list)
+     * @allow (create) - Authenticated user creates a new project with their user ID as the ownerId.
+     * @allow (update, delete) - Authenticated user updates or deletes a project they own.
+     * @deny (create) - Unauthenticated user attempts to create a project.
+     * @deny (update, delete) - Unauthenticated user attempts to update or delete a project.
+     * @principle Allows public reads, but enforces document ownership for writes.
      */
     match /projects/{projectId} {
       allow get, list: if true;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow create: if isSignedIn() && request.resource.data.id == projectId;
+      allow update, delete: if isExistingOwner(resource.data.id);
     }
 
     /**
-     * @description Grants public read access to contact submissions, but denies all writes.
+     * @description Allows public read access to contact submissions, but restricts write access to authenticated users who own the document.
      * @path /contactSubmissions/{contactSubmissionId}
-     * @allow (get, list) Any user can read contact submission information.
-     * @deny (create, update, delete) No user can create, update, or delete contact submission information through direct client access.
-     * @principle Allows public reads, but restricts all writes, assuming a backend handles data modification.
+     * @allow (get, list)
+     * @allow (create) - Authenticated user creates a new contact submission with their user ID as the ownerId.
+     * @allow (update, delete) - Authenticated user updates or deletes a contact submission they own.
+     * @deny (create) - Unauthenticated user attempts to create a contact submission.
+     * @deny (update, delete) - Unauthenticated user attempts to update or delete a contact submission.
+     * @principle Allows public reads, but enforces document ownership for writes.
      */
     match /contactSubmissions/{contactSubmissionId} {
       allow get, list: if true;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow create: if isSignedIn() && request.resource.data.id == contactSubmissionId;
+      allow update, delete: if isExistingOwner(resource.data.id);
     }
 
     /**
-     * @description Grants public read access to team members, but denies all writes.
+     * @description Allows public read access to team members, but restricts write access to authenticated users who own the document.
      * @path /teamMembers/{teamMemberId}
-     * @allow (get, list) Any user can read team member information.
-     * @deny (create, update, delete) No user can create, update, or delete team member information through direct client access.
-     * @principle Allows public reads, but restricts all writes, assuming a backend handles data modification.
+     * @allow (get, list)
+     * @allow (create) - Authenticated user creates a new team member with their user ID as the ownerId.
+     * @allow (update, delete) - Authenticated user updates or deletes a team member they own.
+     * @deny (create) - Unauthenticated user attempts to create a team member.
+     * @deny (update, delete) - Unauthenticated user attempts to update or delete a team member.
+     * @principle Allows public reads, but enforces document ownership for writes.
      */
     match /teamMembers/{teamMemberId} {
       allow get, list: if true;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow create: if isSignedIn() && request.resource.data.id == teamMemberId;
+      allow update, delete: if isExistingOwner(resource.data.id);
+    }
+    
+      /**
+     * @description Allows a user to only read their own order. Allow create for authenticated users.
+     * @path /orders/{orderId}
+     * @allow (get) - Authenticated user can read their own order.
+     * @allow (list) - Authenticated user can list their own orders.
+     * @allow (create) - Authenticated user can create a new order.
+     * @allow (update, delete) - Only the owner can update/delete their order.
+     * @deny (get, list) - An unauthenticated user attempts to read orders.
+     * @deny (update, delete) - An unauthenticated user attempts to update/delete orders.
+     * @principle Enforces user-specific data access for orders.
+     */
+    match /orders/{orderId} {
+        allow get: if isSignedIn() && resource.data.userId == request.auth.uid;
+        allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+        allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid && request.resource.data.id == orderId;
+        allow update, delete: if isSignedIn() && isExistingOwner(resource.data.userId);
     }
   }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    function isExistingOwner(userId) {
+      return isSignedIn() && isOwner(userId) && resource != null;
+    }
 }
