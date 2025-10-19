@@ -22,7 +22,5 @@ export function getSdks(firebaseApp: FirebaseApp) {
 export * from './provider';
 export * from './client-provider';
 export * from './rtdb/use-rtdb-list';
-export * from './non-blocking-updates';
-export * from './non-blocking-login';
 export * from './errors';
 export * from './error-emitter';

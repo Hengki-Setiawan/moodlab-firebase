@@ -2,8 +2,8 @@
 
 import { z } from 'zod';
 import { initializeServerSideFirebase } from '@/firebase/server-init';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { revalidatePath } from 'next/cache';
+import { push, serverTimestamp, set } from 'firebase/database';
 
 const contactSchema = z.object({
   name: z.string().min(2, 'Nama harus memiliki setidaknya 2 karakter.'),
@@ -39,13 +39,15 @@ export async function submitContactForm(prevState: State, formData: FormData): P
 
   try {
     const { db } = initializeServerSideFirebase();
+    const contactSubmissionsRef = ref(db, 'contactSubmissions');
+    const newSubmissionRef = push(contactSubmissionsRef);
 
-    await addDoc(collection(db, 'contactSubmissions'), {
+    await set(newSubmissionRef, {
       ...validatedFields.data,
       submissionDate: serverTimestamp(),
     });
     
-    console.log('Contact form submitted and saved to Firestore:', validatedFields.data);
+    console.log('Contact form submitted and saved to Realtime Database:', validatedFields.data);
 
     revalidatePath('/kontak');
 
@@ -53,7 +55,7 @@ export async function submitContactForm(prevState: State, formData: FormData): P
       message: 'Success: Pesan Anda telah berhasil dikirim!',
     };
   } catch (error) {
-    console.error('Error saving to Firestore:', error);
+    console.error('Error saving to Realtime Database:', error);
     let errorMessage = 'Gagal menyimpan data Anda. Silakan coba lagi.';
     if (error instanceof Error) {
         errorMessage = error.message;
@@ -64,6 +66,7 @@ export async function submitContactForm(prevState: State, formData: FormData): P
 
 // Action to seed the database
 import { seedProducts as seedDbProducts } from '@/lib/seed-db';
+import { ref } from 'firebase/database';
 
 export async function seedDatabase() {
     console.log("Seeding database...");
