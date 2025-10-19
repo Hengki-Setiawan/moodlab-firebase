@@ -71,7 +71,7 @@ export function ContactForm() {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state, toast]);
+  }, [state]);
 
   // Handle server-side validation errors
   useEffect(() => {
@@ -87,7 +87,6 @@ export function ContactForm() {
 
   return (
     <Form {...form}>
-      {/* Update the form to use form.handleSubmit */}
       <form action={formAction} className="space-y-6">
         <FormField
           control={form.control}
@@ -122,7 +121,7 @@ export function ContactForm() {
             <FormItem>
               <FormLabel>Nama Perusahaan/UMKM (Opsional)</FormLabel>
               <FormControl>
-                <Input placeholder="Nama bisnis Anda" {...field} value={field.value ?? ''} />
+                <Input placeholder="Nama bisnis Anda" {...field} name="companyName" value={field.value ?? ''} />
               </FormControl>
               <FormMessage />
             </FormItem>

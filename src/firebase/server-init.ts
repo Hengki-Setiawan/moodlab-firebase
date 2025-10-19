@@ -17,7 +17,8 @@ export function initializeServerSideFirestore(): { app: App, firestore: Firestor
     return { app: appInstance, firestore: firestoreInstance };
   }
 
-  const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+  // Use getApps() to check if Firebase has already been initialized.
+  const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
   const firestore = getFirestore(app);
 
   // Cache the instances

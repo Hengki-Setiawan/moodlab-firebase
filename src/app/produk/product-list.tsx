@@ -2,15 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import Script from 'next/script';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useUser, useDatabase } from '@/firebase';
+import { useUser, useDatabase } from '@/firebase'; // Menggunakan hook useDatabase
 import { useToast } from '@/hooks/use-toast';
 import type { Product } from '@/lib/types';
 import { ShoppingCart, Loader2 } from 'lucide-react';
-import { ref, onValue, off } from 'firebase/database';
+import { ref, onValue, off } from 'firebase/database'; // Import fungsi standar Realtime Database
 import { Skeleton } from '@/components/ui/skeleton';
 
 declare global {
@@ -46,22 +45,23 @@ export function ProductList() {
   const [loadingProductId, setLoadingProductId] = useState<string | null>(null);
   const { user, isUserLoading } = useUser();
   const { toast } = useToast();
-  const database = useDatabase();
+  const database = useDatabase(); // Mendapatkan instance database dari provider
 
   useEffect(() => {
+    // Jika instance database belum siap, jangan lakukan apa-apa.
+    // isLoading yang sudah true akan menampilkan skeleton.
     if (!database) {
-      // Database instance might not be ready yet. We'll wait.
-      // isLoading is already true, so the skeleton will show.
       return;
     }
 
     const productsRef = ref(database, 'products');
     
-    // The 'onValue' function will be our listener.
+    // Menggunakan listener onValue langsung dari Firebase SDK
     const listener = onValue(productsRef, 
       (snapshot) => {
         if (snapshot.exists()) {
           const productsObject = snapshot.val();
+          // Mengubah objek menjadi array
           const productsArray: Product[] = Object.keys(productsObject).map(key => ({
             id: key,
             ...productsObject[key]
@@ -69,24 +69,26 @@ export function ProductList() {
           setProducts(productsArray);
           setError(null);
         } else {
+          // Jika tidak ada data di node 'products'
           setProducts([]);
-          console.log("No products found in the database.");
+          console.log("Tidak ada produk ditemukan di database.");
         }
-        setIsLoading(false);
+        setIsLoading(false); // Selesai memuat, baik ada data maupun tidak
       }, 
       (error) => {
+        // Menangani error jika terjadi masalah koneksi atau aturan keamanan
         console.error("Firebase Realtime Database error:", error);
         setError(error);
         setIsLoading(false);
       }
     );
 
-    // Cleanup function: This is crucial to prevent memory leaks.
-    // It detaches the listener when the component unmounts.
+    // Fungsi cleanup: Ini krusial untuk mencegah memory leak
+    // dengan melepaskan listener saat komponen di-unmount.
     return () => {
       off(productsRef, 'value', listener);
     };
-  }, [database]); // The effect re-runs if the database instance changes.
+  }, [database]); // Efek ini akan berjalan lagi jika instance database berubah.
 
 
   const handleBuy = async (product: Product) => {
@@ -139,18 +141,21 @@ export function ProductList() {
                 onSuccess: function(result: any){
                   console.log('Payment success!', result);
                   toast({ title: "Pembayaran Berhasil!", description: "Terima kasih, produk akan segera tersedia di akun Anda."});
+                  setLoadingProductId(null);
                 },
                 onPending: function(result: any){
                   console.log('Payment pending.', result);
                   toast({ title: "Menunggu Pembayaran", description: "Selesaikan pembayaran Anda."});
+                  setLoadingProductId(null);
                 },
                 onError: function(result: any){
                   console.error('Payment error!', result);
                   toast({ title: "Pembayaran Gagal", description: "Terjadi kesalahan. Silakan coba lagi.", variant: 'destructive' });
+                  setLoadingProductId(null);
                 },
                 onClose: function(){
                   console.log('Payment popup closed.');
-                  setLoadingProductId(null); // Reset loading state regardless of outcome
+                  setLoadingProductId(null); // Reset loading state
                 }
               });
         } else {
@@ -167,92 +172,80 @@ export function ProductList() {
         setLoadingProductId(null);
     }
   };
-
-  const renderContent = () => {
-    if (isLoading) {
-        return (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                {[...Array(3)].map((_, i) => <ProductSkeleton key={i} />)}
-            </div>
-        );
-    }
   
-    if (error) {
-        return (
-          <div className="text-center col-span-full py-12 border rounded-lg bg-destructive/10 border-destructive">
-            <h3 className="text-xl font-semibold text-destructive-foreground">Akses Database Gagal</h3>
-            <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">
-              Gagal membaca data dari Realtime Database. Ini bisa terjadi karena aturan keamanan (security rules) tidak mengizinkan akses baca. Pastikan aturan database Anda sudah benar. Error: {error.message}
-            </p>
+  // Logika render konten yang diperbarui dan lebih andal
+  if (isLoading) {
+      return (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+              {[...Array(3)].map((_, i) => <ProductSkeleton key={i} />)}
           </div>
-        );
-    }
-    
-    if (products.length === 0) {
-        return (
-          <div className="text-center col-span-full py-12 border rounded-lg">
-            <h3 className="text-xl font-semibold">Belum Ada Produk</h3>
-            <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">
-              Tidak ada produk yang ditemukan di database. Jika Anda baru saja mengimpor data, pastikan data diimpor di bawah node 'products'.
-            </p>
-          </div>
-        );
-    }
+      );
+  }
 
-    return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {products.map((product) => (
-                <Card key={product.id} className="flex flex-col">
-                    <CardHeader className="p-0">
-                    <Image
-                        src={product.imageUrl}
-                        alt={product.name}
-                        width={600}
-                        height={400}
-                        className="object-cover w-full h-64 rounded-t-lg"
-                        data-ai-hint={product.imageHint || 'product image'}
-                    />
-                    </CardHeader>
-                    <CardContent className="p-6 flex-grow">
-                    <Badge variant="secondary" className="mb-2">{product.category}</Badge>
-                    <h3 className="font-headline text-xl font-semibold">{product.name}</h3>
-                    <p className="text-muted-foreground mt-2 text-sm">{product.description}</p>
-                    </CardContent>
-                    <CardFooter className="p-6 pt-0 flex justify-between items-center">
-                    <p className="text-xl font-bold text-primary">
-                        {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(product.price)}
-                    </p>
-                    <Button 
-                        onClick={() => handleBuy(product)} 
-                        disabled={isUserLoading || !!loadingProductId}
-                    >
-                        {loadingProductId === product.id ? (
-                            <>
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                Memproses...
-                            </>
-                        ) : (
-                            <>
-                                <ShoppingCart className="mr-2 h-4 w-4" />
-                                Beli Sekarang
-                            </>
-                        )}
-                    </Button>
-                    </CardFooter>
-                </Card>
-            ))}
+  if (error) {
+      return (
+        <div className="text-center col-span-full py-12 border rounded-lg bg-destructive/10 border-destructive">
+          <h3 className="text-xl font-semibold text-destructive-foreground">Akses Database Gagal</h3>
+          <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">
+            Gagal membaca data dari Realtime Database. Ini bisa terjadi karena aturan keamanan (security rules) tidak mengizinkan akses baca. Pastikan aturan database Anda sudah benar. Error: {error.message}
+          </p>
         </div>
-    );
-  };
+      );
+  }
+  
+  if (products.length === 0) {
+      return (
+        <div className="text-center col-span-full py-12 border rounded-lg">
+          <h3 className="text-xl font-semibold">Belum Ada Produk</h3>
+          <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">
+            Tidak ada produk yang ditemukan di database. Jika Anda sudah mengimpor data, pastikan data diimpor di bawah node 'products'.
+          </p>
+        </div>
+      );
+  }
 
   return (
-    <>
-      <Script
-        src="https://app.sandbox.midtrans.com/snap/snap.js"
-        data-client-key={process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY}
-        strategy="beforeInteractive"
-      />
-      {renderContent()}
-    </>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          {products.map((product) => (
+              <Card key={product.id} className="flex flex-col">
+                  <CardHeader className="p-0">
+                  <Image
+                      src={product.imageUrl}
+                      alt={product.name}
+                      width={600}
+                      height={400}
+                      className="object-cover w-full h-64 rounded-t-lg"
+                      data-ai-hint={product.imageHint || 'product image'}
+                  />
+                  </CardHeader>
+                  <CardContent className="p-6 flex-grow">
+                  <Badge variant="secondary" className="mb-2">{product.category}</Badge>
+                  <h3 className="font-headline text-xl font-semibold">{product.name}</h3>
+                  <p className="text-muted-foreground mt-2 text-sm">{product.description}</p>
+                  </CardContent>
+                  <CardFooter className="p-6 pt-0 flex justify-between items-center">
+                  <p className="text-xl font-bold text-primary">
+                      {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(product.price)}
+                  </p>
+                  <Button 
+                      onClick={() => handleBuy(product)} 
+                      disabled={isUserLoading || !!loadingProductId}
+                  >
+                      {loadingProductId === product.id ? (
+                          <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Memproses...
+                          </>
+                      ) : (
+                          <>
+                              <ShoppingCart className="mr-2 h-4 w-4" />
+                              Beli Sekarang
+                          </>
+                      )}
+                  </Button>
+                  </CardFooter>
+              </Card>
+          ))}
+      </div>
   );
 }

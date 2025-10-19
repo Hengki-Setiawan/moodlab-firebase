@@ -26,7 +26,7 @@ export async function submitContactForm(prevState: State, formData: FormData): P
   const validatedFields = contactSchema.safeParse({
     name: formData.get('name'),
     email: formData.get('email'),
-    companyName: formData.get('company'), // Pastikan ini 'companyName'
+    companyName: formData.get('companyName'),
     message: formData.get('message'),
   });
 
@@ -37,16 +37,16 @@ export async function submitContactForm(prevState: State, formData: FormData): P
     };
   }
   
-  // Destructure companyName dari data yang divalidasi
   const { companyName, ...restOfData } = validatedFields.data;
 
   try {
+    // Menggunakan Firestore untuk form kontak, yang lebih cocok.
     const { firestore } = initializeServerSideFirestore();
     const contactSubmissionsRef = collection(firestore, 'contactSubmissions');
     
     await addDoc(contactSubmissionsRef, {
       ...restOfData,
-      companyName: companyName || '', // Pastikan companyName ada
+      companyName: companyName || '',
       submissionDate: serverTimestamp(),
     });
     
