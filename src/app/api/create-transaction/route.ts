@@ -24,7 +24,7 @@ export async function POST(request: Request) {
 
     // Inisialisasi Midtrans Snap
     const snap = new midtransClient.Snap({
-      isProduction: true, // Set ke true di lingkungan produksi
+      isProduction: false, // Set ke false untuk lingkungan sandbox/pengembangan
       serverKey: serverKey,
       clientKey: clientKey,
     });
