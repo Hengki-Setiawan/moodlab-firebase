@@ -5,12 +5,13 @@ import Image from 'next/image';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useUser, useDatabase } from '@/firebase'; // Menggunakan hook useDatabase
+import { useUser } from '@/firebase/provider';
 import { useToast } from '@/hooks/use-toast';
 import type { Product } from '@/lib/types';
 import { ShoppingCart, Loader2 } from 'lucide-react';
-import { ref, onValue, off } from 'firebase/database'; // Import fungsi standar Realtime Database
 import { Skeleton } from '@/components/ui/skeleton';
+import { getDatabase, ref, onValue, off } from 'firebase/database';
+import { useFirebaseApp } from '@/firebase/provider';
 
 declare global {
     interface Window {
@@ -41,27 +42,25 @@ function ProductSkeleton() {
 export function ProductList() {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [loadingProductId, setLoadingProductId] = useState<string | null>(null);
   const { user, isUserLoading } = useUser();
   const { toast } = useToast();
-  const database = useDatabase(); // Mendapatkan instance database dari provider
+  const app = useFirebaseApp();
 
   useEffect(() => {
-    // Jika instance database belum siap, jangan lakukan apa-apa.
-    // isLoading yang sudah true akan menampilkan skeleton.
-    if (!database) {
+    if (!app) {
+      // Tunggu sampai app Firebase siap
       return;
     }
 
+    const database = getDatabase(app);
     const productsRef = ref(database, 'products');
     
-    // Menggunakan listener onValue langsung dari Firebase SDK
     const listener = onValue(productsRef, 
       (snapshot) => {
         if (snapshot.exists()) {
           const productsObject = snapshot.val();
-          // Mengubah objek menjadi array
           const productsArray: Product[] = Object.keys(productsObject).map(key => ({
             id: key,
             ...productsObject[key]
@@ -69,26 +68,22 @@ export function ProductList() {
           setProducts(productsArray);
           setError(null);
         } else {
-          // Jika tidak ada data di node 'products'
           setProducts([]);
-          console.log("Tidak ada produk ditemukan di database.");
+          console.log("Tidak ada produk ditemukan di path 'products'.");
         }
-        setIsLoading(false); // Selesai memuat, baik ada data maupun tidak
+        setIsLoading(false);
       }, 
       (error) => {
-        // Menangani error jika terjadi masalah koneksi atau aturan keamanan
         console.error("Firebase Realtime Database error:", error);
-        setError(error);
+        setError(`Gagal membaca data dari Realtime Database. Pastikan security rules Anda mengizinkan akses baca. Error: ${error.message}`);
         setIsLoading(false);
       }
     );
 
-    // Fungsi cleanup: Ini krusial untuk mencegah memory leak
-    // dengan melepaskan listener saat komponen di-unmount.
     return () => {
       off(productsRef, 'value', listener);
     };
-  }, [database]); // Efek ini akan berjalan lagi jika instance database berubah.
+  }, [app]);
 
 
   const handleBuy = async (product: Product) => {
@@ -173,7 +168,6 @@ export function ProductList() {
     }
   };
   
-  // Logika render konten yang diperbarui dan lebih andal
   if (isLoading) {
       return (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -187,7 +181,7 @@ export function ProductList() {
         <div className="text-center col-span-full py-12 border rounded-lg bg-destructive/10 border-destructive">
           <h3 className="text-xl font-semibold text-destructive-foreground">Akses Database Gagal</h3>
           <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">
-            Gagal membaca data dari Realtime Database. Ini bisa terjadi karena aturan keamanan (security rules) tidak mengizinkan akses baca. Pastikan aturan database Anda sudah benar. Error: {error.message}
+            {error}
           </p>
         </div>
       );
@@ -198,7 +192,7 @@ export function ProductList() {
         <div className="text-center col-span-full py-12 border rounded-lg">
           <h3 className="text-xl font-semibold">Belum Ada Produk</h3>
           <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">
-            Tidak ada produk yang ditemukan di database. Jika Anda sudah mengimpor data, pastikan data diimpor di bawah node 'products'.
+            Tidak ada produk yang ditemukan di database. Pastikan data diimpor di bawah node 'products' dan security rules mengizinkan baca.
           </p>
         </div>
       );
