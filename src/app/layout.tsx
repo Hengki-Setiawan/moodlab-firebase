@@ -32,7 +32,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${poppins.variable} ${inter.variable}`}>
-      <body className="font-body antialiased">
+      <body className="font-body antialiased flex flex-col min-h-screen">
         <FirebaseClientProvider>
           <Header />
           <main className="flex-grow">{children}</main>

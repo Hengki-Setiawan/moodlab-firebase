@@ -6,6 +6,9 @@ import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { initializeServerSideFirestore } from '@/firebase/server-init';
 import midtransclient from 'midtrans-client';
 import type { DigitalProduct } from '@/lib/types';
+import { createFirebaseAdminApp } from '@/firebase/server-admin-init';
+import { getAuth } from 'firebase-admin/auth';
+import { cookies } from 'next/headers';
 
 const contactSchema = z.object({
   name: z.string().min(2, 'Nama harus memiliki setidaknya 2 karakter.'),
@@ -117,4 +120,49 @@ export async function getPaymentToken(product: DigitalProduct): Promise<PaymentT
     console.error('Error creating Midtrans transaction:', e);
     return { error: `Gagal membuat transaksi: ${e.message}` };
   }
+}
+
+
+// --- AUTH ACTIONS ---
+
+type AuthState = {
+  message: string;
+  success: boolean;
+  errors?: Record<string, string[]>;
+} | null;
+
+const loginSchema = z.object({
+  email: z.string().email('Alamat email tidak valid.'),
+  password: z.string().min(1, 'Kata sandi tidak boleh kosong.'),
+});
+
+export async function login(prevState: AuthState, formData: FormData): Promise<AuthState> {
+  // This is a placeholder. Client-side will handle Firebase login.
+  // We return a success message to trigger client-side navigation.
+  return { message: 'Login flow initiated.', success: true };
+}
+
+
+const registerSchema = z.object({
+  name: z.string().min(2, 'Nama harus memiliki setidaknya 2 karakter.'),
+  email: z.string().email('Alamat email tidak valid.'),
+  password: z.string().min(6, 'Kata sandi harus memiliki setidaknya 6 karakter.'),
+});
+
+export async function register(prevState: AuthState, formData: FormData): Promise<AuthState> {
+   // This is a placeholder. Client-side will handle Firebase registration.
+   // We return a success message to trigger client-side actions.
+  return { message: 'Registration flow initiated.', success: true };
+}
+
+export async function createSession(idToken: string) {
+  const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
+  const app = createFirebaseAdminApp();
+  const auth = getAuth(app);
+  const sessionCookie = await auth.createSessionCookie(idToken, { expiresIn });
+  cookies().set('__session', sessionCookie, { maxAge: expiresIn, httpOnly: true, secure: true });
+}
+
+export async function clearSession() {
+  cookies().delete('__session');
 }
