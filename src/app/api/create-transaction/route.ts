@@ -1,11 +1,7 @@
 import { NextResponse } from 'next/server';
 import midtransClient from 'midtrans-client';
-import dotenv from 'dotenv';
 
-// Muat variabel lingkungan dari file .env di folder functions
-// Ini hanya untuk pengembangan lokal. Di Vercel, Anda akan mengatur ini di dasbor.
-dotenv.config({ path: 'functions/.env' });
-
+// Variabel lingkungan sekarang dimuat secara otomatis oleh Next.js dari .env.local
 
 export async function POST(request: Request) {
   try {
@@ -16,10 +12,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: 'Data tidak lengkap.' }, { status: 400 });
     }
 
+    // Ambil kunci dari process.env, yang sudah diisi oleh Next.js
     const serverKey = process.env.MIDTRANS_SERVER_KEY;
     const clientKey = process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY;
 
     if (!serverKey || !clientKey) {
+        console.error("Kunci Midtrans tidak ditemukan. Pastikan MIDTRANS_SERVER_KEY dan NEXT_PUBLIC_MIDTRANS_CLIENT_KEY ada di file .env.local");
         throw new Error("Kunci Midtrans tidak dikonfigurasi di environment variables.");
     }
 
