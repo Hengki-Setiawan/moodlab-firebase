@@ -50,53 +50,43 @@ export function ProductList() {
 
   useEffect(() => {
     if (!database) {
-        setIsLoading(false);
-        // We don't set an error here because the database might just be initializing.
-        // The provider handles the availability of the service.
-        return;
+      // Database instance might not be ready yet. We'll wait.
+      // isLoading is already true, so the skeleton will show.
+      return;
     }
 
-    const productsRef = ref(database, 'products'); // Reference to the 'products' node
-    setIsLoading(true);
-
-    const unsubscribe = onValue(productsRef, 
+    const productsRef = ref(database, 'products');
+    
+    // The 'onValue' function will be our listener.
+    const listener = onValue(productsRef, 
       (snapshot) => {
-        try {
-            if (snapshot.exists()) {
-                const productsObject = snapshot.val();
-                if (productsObject && typeof productsObject === 'object') {
-                    const productsArray: Product[] = Object.keys(productsObject).map(key => ({
-                        ...(productsObject[key] as Omit<Product, 'id'>),
-                        id: key,
-                    }));
-                    setProducts(productsArray);
-                } else {
-                    setProducts([]);
-                }
-            } else {
-                setProducts([]);
-            }
-            setError(null);
-        } catch(e: any) {
-            console.error("Error processing snapshot:", e);
-            setError(new Error("Gagal memproses data produk."));
-            setProducts([]);
-        } finally {
-            setIsLoading(false);
+        if (snapshot.exists()) {
+          const productsObject = snapshot.val();
+          const productsArray: Product[] = Object.keys(productsObject).map(key => ({
+            id: key,
+            ...productsObject[key]
+          }));
+          setProducts(productsArray);
+          setError(null);
+        } else {
+          setProducts([]);
+          console.log("No products found in the database.");
         }
+        setIsLoading(false);
       }, 
       (error) => {
-        console.error("Firebase onValue error:", error);
+        console.error("Firebase Realtime Database error:", error);
         setError(error);
-        setProducts([]);
         setIsLoading(false);
       }
     );
 
-    // Cleanup subscription on component unmount
-    return () => off(productsRef, 'value', unsubscribe);
-
-  }, [database]);
+    // Cleanup function: This is crucial to prevent memory leaks.
+    // It detaches the listener when the component unmounts.
+    return () => {
+      off(productsRef, 'value', listener);
+    };
+  }, [database]); // The effect re-runs if the database instance changes.
 
 
   const handleBuy = async (product: Product) => {
@@ -149,21 +139,18 @@ export function ProductList() {
                 onSuccess: function(result: any){
                   console.log('Payment success!', result);
                   toast({ title: "Pembayaran Berhasil!", description: "Terima kasih, produk akan segera tersedia di akun Anda."});
-                  setLoadingProductId(null);
                 },
                 onPending: function(result: any){
                   console.log('Payment pending.', result);
                   toast({ title: "Menunggu Pembayaran", description: "Selesaikan pembayaran Anda."});
-                  setLoadingProductId(null);
                 },
                 onError: function(result: any){
                   console.error('Payment error!', result);
                   toast({ title: "Pembayaran Gagal", description: "Terjadi kesalahan. Silakan coba lagi.", variant: 'destructive' });
-                  setLoadingProductId(null);
                 },
                 onClose: function(){
                   console.log('Payment popup closed.');
-                  setLoadingProductId(null);
+                  setLoadingProductId(null); // Reset loading state regardless of outcome
                 }
               });
         } else {
@@ -195,18 +182,18 @@ export function ProductList() {
           <div className="text-center col-span-full py-12 border rounded-lg bg-destructive/10 border-destructive">
             <h3 className="text-xl font-semibold text-destructive-foreground">Akses Database Gagal</h3>
             <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">
-              Gagal membaca data dari Realtime Database. Ini bisa terjadi karena aturan keamanan (security rules) tidak mengizinkan akses baca. Pastikan Anda telah mengatur database Anda ke "Test Mode" di Firebase Console. Error: {error.message}
+              Gagal membaca data dari Realtime Database. Ini bisa terjadi karena aturan keamanan (security rules) tidak mengizinkan akses baca. Pastikan aturan database Anda sudah benar. Error: {error.message}
             </p>
           </div>
         );
     }
     
-    if (!products || products.length === 0) {
+    if (products.length === 0) {
         return (
           <div className="text-center col-span-full py-12 border rounded-lg">
             <h3 className="text-xl font-semibold">Belum Ada Produk</h3>
             <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">
-              Saat ini belum ada produk yang tersedia. Jika Anda baru saja mengimpor data, silakan tunggu beberapa saat atau segarkan halaman.
+              Tidak ada produk yang ditemukan di database. Jika Anda baru saja mengimpor data, pastikan data diimpor di bawah node 'products'.
             </p>
           </div>
         );

@@ -1,10 +1,9 @@
 'use server';
 
 import { z } from 'zod';
-import { initializeServerSideFirebase } from '@/firebase/server-init';
 import { revalidatePath } from 'next/cache';
-import { push, serverTimestamp, set } from 'firebase/database';
-import { ref } from 'firebase/database';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { initializeServerSideFirestore } from '@/firebase/server-init';
 
 const contactSchema = z.object({
   name: z.string().min(2, 'Nama harus memiliki setidaknya 2 karakter.'),
@@ -27,7 +26,7 @@ export async function submitContactForm(prevState: State, formData: FormData): P
   const validatedFields = contactSchema.safeParse({
     name: formData.get('name'),
     email: formData.get('email'),
-    company: formData.get('company'),
+    companyName: formData.get('company'), // Pastikan ini 'companyName'
     message: formData.get('message'),
   });
 
@@ -37,18 +36,21 @@ export async function submitContactForm(prevState: State, formData: FormData): P
       message: 'Error: Silakan periksa kembali isian Anda.',
     };
   }
+  
+  // Destructure companyName dari data yang divalidasi
+  const { companyName, ...restOfData } = validatedFields.data;
 
   try {
-    const { db } = initializeServerSideFirebase();
-    const contactSubmissionsRef = ref(db, 'contactSubmissions');
-    const newSubmissionRef = push(contactSubmissionsRef);
-
-    await set(newSubmissionRef, {
-      ...validatedFields.data,
+    const { firestore } = initializeServerSideFirestore();
+    const contactSubmissionsRef = collection(firestore, 'contactSubmissions');
+    
+    await addDoc(contactSubmissionsRef, {
+      ...restOfData,
+      companyName: companyName || '', // Pastikan companyName ada
       submissionDate: serverTimestamp(),
     });
     
-    console.log('Contact form submitted and saved to Realtime Database:', validatedFields.data);
+    console.log('Contact form submitted and saved to Firestore:', validatedFields.data);
 
     revalidatePath('/kontak');
 
@@ -56,7 +58,7 @@ export async function submitContactForm(prevState: State, formData: FormData): P
       message: 'Success: Pesan Anda telah berhasil dikirim!',
     };
   } catch (error) {
-    console.error('Error saving to Realtime Database:', error);
+    console.error('Error saving to Firestore:', error);
     let errorMessage = 'Gagal menyimpan data Anda. Silakan coba lagi.';
     if (error instanceof Error) {
         errorMessage = error.message;

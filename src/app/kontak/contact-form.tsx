@@ -18,7 +18,7 @@ import { ArrowRight } from 'lucide-react';
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Nama harus memiliki setidaknya 2 karakter.' }),
   email: z.string().email({ message: 'Alamat email tidak valid.' }),
-  company: z.string().optional(),
+  companyName: z.string().optional(),
   message: z.string().min(10, { message: 'Pesan harus memiliki setidaknya 10 karakter.' }),
 });
 
@@ -49,7 +49,7 @@ export function ContactForm() {
     defaultValues: {
       name: '',
       email: '',
-      company: '',
+      companyName: '',
       message: '',
     },
   });
@@ -70,10 +70,24 @@ export function ContactForm() {
         });
       }
     }
-  }, [state, toast, form]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state, toast]);
+
+  // Handle server-side validation errors
+  useEffect(() => {
+    const errors = state.errors;
+    if (errors) {
+      if (errors.name) form.setError('name', { type: 'server', message: errors.name[0] });
+      if (errors.email) form.setError('email', { type: 'server', message: errors.email[0] });
+      if (errors.companyName) form.setError('companyName', { type: 'server', message: errors.companyName[0] });
+      if (errors.message) form.setError('message', { type: 'server', message: errors.message[0] });
+    }
+  }, [state.errors, form]);
+
 
   return (
     <Form {...form}>
+      {/* Update the form to use form.handleSubmit */}
       <form action={formAction} className="space-y-6">
         <FormField
           control={form.control}
@@ -103,12 +117,12 @@ export function ContactForm() {
         />
         <FormField
           control={form.control}
-          name="company"
+          name="companyName"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Nama Perusahaan/UMKM (Opsional)</FormLabel>
               <FormControl>
-                <Input placeholder="Nama bisnis Anda" {...field} />
+                <Input placeholder="Nama bisnis Anda" {...field} value={field.value ?? ''} />
               </FormControl>
               <FormMessage />
             </FormItem>
