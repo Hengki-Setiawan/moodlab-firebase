@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
@@ -26,12 +26,12 @@ const formSchema = z.object({
   email: z.string().email({ message: 'Alamat email tidak valid.' }),
   password: z
     .string()
-    .min(1, { message: 'Password tidak boleh kosong.' }),
+    .min(6, { message: 'Password harus memiliki setidaknya 6 karakter.' }),
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
-export function LoginForm() {
+export function RegisterForm() {
   const [isLoading, setIsLoading] = useState(false);
   const auth = useAuth();
   const router = useRouter();
@@ -45,35 +45,36 @@ export function LoginForm() {
     },
   });
 
-  const handleLogin = async (data: FormValues) => {
+  const handleRegister = async (data: FormValues) => {
     setIsLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, data.email, data.password);
+      await createUserWithEmailAndPassword(auth, data.email, data.password);
       toast({
-        title: 'Login Berhasil!',
-        description: 'Anda telah berhasil masuk.',
+        title: 'Pendaftaran Berhasil!',
+        description: 'Akun Anda telah dibuat. Anda akan dialihkan...',
       });
       router.push('/akun');
       router.refresh(); // Refresh the page to update header state
     } catch (error) {
-      console.error(`Login error:`, error);
+      console.error(`Registration error:`, error);
       let errorMessage = 'Terjadi kesalahan. Silakan coba lagi.';
       if (error instanceof FirebaseError) {
         switch (error.code) {
-          case 'auth/user-not-found':
-          case 'auth/wrong-password':
-          case 'auth/invalid-credential':
-            errorMessage = 'Email atau password yang Anda masukkan salah.';
+          case 'auth/email-already-in-use':
+            errorMessage = 'Email ini sudah terdaftar. Silakan login.';
             break;
           case 'auth/invalid-email':
             errorMessage = 'Format email tidak valid.';
             break;
+          case 'auth/weak-password':
+            errorMessage = 'Password terlalu lemah. Gunakan minimal 6 karakter.';
+            break;
           default:
-            errorMessage = 'Terjadi kesalahan otentikasi. Periksa kembali email dan password Anda.';
+            errorMessage = 'Terjadi kesalahan saat pendaftaran.';
         }
       }
       toast({
-        title: 'Gagal Login',
+        title: 'Gagal Mendaftar',
         description: errorMessage,
         variant: 'destructive',
       });
@@ -85,7 +86,7 @@ export function LoginForm() {
   return (
     <Form {...form}>
       <form
-        onSubmit={form.handleSubmit(handleLogin)}
+        onSubmit={form.handleSubmit(handleRegister)}
         className="space-y-6"
       >
         <FormField
@@ -110,7 +111,7 @@ export function LoginForm() {
               <FormControl>
                 <Input
                   type="password"
-                  placeholder="&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;"
+                  placeholder="Minimal 6 karakter"
                   {...field}
                 />
               </FormControl>
@@ -125,7 +126,7 @@ export function LoginForm() {
           size="lg"
         >
           {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Login
+          Daftar
         </Button>
       </form>
     </Form>
