@@ -1,36 +1,34 @@
-
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Projects: Publicly readable, admin-only write.
+    // Allow public read access to projects and team members
     match /projects/{projectId} {
       allow read: if true;
-      allow write: if false; // To be managed by admin later
+      allow write: if false; // Admin only
     }
 
-    // Team Members: Publicly readable, admin-only write.
-    match /teamMembers/{teamMemberId} {
+    match /teamMembers/{memberId} {
       allow read: if true;
-      allow write: if false; // To be managed by admin later
-    }
-    
-    // Contact Submissions: Admin-only access.
-    match /contactSubmissions/{submissionId} {
-      allow read, write: if false; // To be managed by admin later
-      allow create: if true; // Allow anyone to submit the form
+      allow write: if false; // Admin only
     }
 
-    // User data: Users can only access their own data.
+    // Allow anyone to submit a contact form
+    match /contactSubmissions/{submissionId} {
+      allow create: if true;
+      allow read, update, delete: if false; // Admin only
+    }
+
+    // Rules for user-specific data
     match /users/{userId} {
+      // A user can only access their own user document, for potential future use.
       allow read, write: if request.auth != null && request.auth.uid == userId;
 
-      // Transactions: Users can create transactions for themselves,
-      // and read their own transaction history.
+      // A user can list and create their own transactions.
+      // They can only read/update/delete individual transactions if they own them.
       match /transactions/{transactionId} {
-        allow create, read: if request.auth != null && request.auth.uid == userId;
-        allow update, delete: if false; // Prevent users from altering history
+        allow list, create: if request.auth != null && request.auth.uid == userId;
+        allow read, update, delete: if request.auth != null && request.auth.uid == userId;
       }
     }
   }
