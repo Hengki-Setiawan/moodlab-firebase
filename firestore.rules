@@ -1,43 +1,44 @@
 
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
-  
-    // Public collections that anyone can read. Writes are restricted.
+
+    // Allow public read for projects, products, and team members
     match /projects/{projectId} {
       allow read: if true;
-      allow write: if false; 
+      allow write: if false;
     }
 
     match /digitalProducts/{productId} {
       allow read: if true;
       allow write: if false;
     }
-    
+
     match /teamMembers/{memberId} {
       allow read: if true;
       allow write: if false;
     }
 
-    // Contact submissions should only be created. No one should read them from the client.
+    // Allow anyone to submit a contact form, but no one to read them
     match /contactSubmissions/{submissionId} {
       allow read: if false;
       allow create: if true;
       allow update, delete: if false;
     }
-    
-    // Users can only read their own orders.
-    // Order creation is handled by server actions, but we can allow client-side creation for authenticated users.
-    match /orders/{orderId} {
-      allow read: if request.auth != null && request.auth.uid == resource.data.userId;
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
-      allow update, delete: if false;
-    }
 
-    // Fallback rule: deny all other access
-    match /{document=**} {
-      allow read, write: if false;
+    // Rules for user orders
+    match /orders/{orderId} {
+      // Allow a user to create a new order document
+      allow create: if request.auth != null;
+
+      // Allow a user to read their own single order document
+      allow get: if request.auth != null && request.auth.uid == resource.data.userId;
+
+      // Allow a user to list/query their own orders, but not all orders
+      allow list: if request.auth != null && request.auth.uid == request.query.filters.userId;
+
+      // Nobody can update or delete an order from the client-side
+      allow update, delete: if false;
     }
   }
 }
