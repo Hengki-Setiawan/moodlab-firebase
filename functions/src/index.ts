@@ -1,3 +1,4 @@
+
 import * as functions from "firebase-functions";
 import * as midtransClient from "midtrans-client";
 
@@ -10,10 +11,11 @@ export const createMidtransTransaction = functions.https.onCall(
       );
     }
 
+    // Menggunakan cara baru: membaca dari environment variables
     const snap = new midtransClient.Snap({
       isProduction: false,
-      serverKey: functions.config().midtrans.server_key,
-      clientKey: functions.config().midtrans.client_key,
+      serverKey: process.env.MIDTRANS_SERVER_KEY,
+      clientKey: process.env.MIDTRANS_CLIENT_KEY,
     });
 
     const parameter = {
@@ -36,9 +38,7 @@ export const createMidtransTransaction = functions.https.onCall(
 
     try {
       const transaction = await snap.createTransaction(parameter);
-      const transactionToken = transaction.token;
-      functions.logger.info("Transaction Token:", transactionToken);
-      return {token: transactionToken};
+      return {token: transaction.token};
     } catch (e: any) {
       functions.logger.error("Error creating Midtrans transaction:", e);
       throw new functions.https.HttpsError("internal", e.message);
