@@ -1,7 +1,8 @@
 import midtransClient from 'midtrans-client';
 
 const serverKey = process.env.MIDTRANS_SERVER_KEY;
-const clientKey = process.env.MIDTRANS_CLIENT_KEY;
+// Updated to use the correct environment variable name for the client key
+const clientKey = process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY;
 
 if (!serverKey || !clientKey) {
   throw new Error('Midtrans server key or client key is not set in environment variables.');
