@@ -1,17 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Script from 'next/script';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useUser, useDatabase, useMemoFirebase } from '@/firebase';
-import { useRtdbList } from '@/firebase/rtdb/use-rtdb-list';
+import { useUser, useDatabase } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import type { Product } from '@/lib/types';
 import { ShoppingCart, Loader2 } from 'lucide-react';
-import { ref } from 'firebase/database';
+import { ref, onValue, off } from 'firebase/database';
 import { Skeleton } from '@/components/ui/skeleton';
 
 declare global {
@@ -41,18 +40,67 @@ function ProductSkeleton() {
 }
 
 export function ProductList() {
-  const [isMidtransReady, setMidtransReady] = useState(false);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   const [loadingProductId, setLoadingProductId] = useState<string | null>(null);
   const { user, isUserLoading } = useUser();
   const { toast } = useToast();
   const database = useDatabase();
 
-  const productsRef = useMemoFirebase(() => {
-    if (!database) return null;
-    return ref(database, 'products'); 
+  useEffect(() => {
+    if (!database) {
+        setIsLoading(false);
+        setError(new Error("Database service is not available."));
+        return;
+    }
+
+    const productsRef = ref(database); // Reference to the root of the database
+    setIsLoading(true);
+
+    const unsubscribe = onValue(productsRef, 
+      (snapshot) => {
+        try {
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                // The data is nested under a 'products' key from the JSON import
+                const productsObject = data.products;
+                if (productsObject && typeof productsObject === 'object') {
+                    const productsArray: Product[] = Object.keys(productsObject).map(key => ({
+                        ...(productsObject[key] as Omit<Product, 'id'>),
+                        id: key,
+                    }));
+                    setProducts(productsArray);
+                } else {
+                    // This handles if the 'products' node is empty or not an object
+                    setProducts([]);
+                }
+            } else {
+                // If the root is empty
+                setProducts([]);
+            }
+            setError(null);
+        } catch(e: any) {
+            console.error("Error processing snapshot:", e);
+            setError(new Error("Gagal memproses data produk."));
+            setProducts([]);
+        } finally {
+            setIsLoading(false);
+        }
+      }, 
+      (error) => {
+        console.error("Firebase onValue error:", error);
+        setError(error);
+        setProducts([]);
+        setIsLoading(false);
+      }
+    );
+
+    // Cleanup subscription on component unmount
+    return () => off(productsRef, 'value', unsubscribe);
+
   }, [database]);
 
-  const { data: products, isLoading: isLoadingProducts, error } = useRtdbList<Product>(productsRef);
 
   const handleBuy = async (product: Product) => {
     if (!user) {
@@ -137,7 +185,7 @@ export function ProductList() {
   };
 
   const renderContent = () => {
-    if (isLoadingProducts) {
+    if (isLoading) {
         return (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
                 {[...Array(3)].map((_, i) => <ProductSkeleton key={i} />)}
@@ -161,7 +209,7 @@ export function ProductList() {
           <div className="text-center col-span-full py-12 border rounded-lg">
             <h3 className="text-xl font-semibold">Belum Ada Produk</h3>
             <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">
-              Database produk Anda masih kosong atau data tidak dapat dimuat. Pastikan Anda telah mengimpor `docs/produk-awal.json` ke root Realtime Database Anda.
+              Saat ini belum ada produk yang tersedia. Jika Anda baru saja mengimpor data, silakan tunggu beberapa saat atau segarkan halaman.
             </p>
           </div>
         );
@@ -192,7 +240,7 @@ export function ProductList() {
                     </p>
                     <Button 
                         onClick={() => handleBuy(product)} 
-                        disabled={!isMidtransReady || isUserLoading || !!loadingProductId}
+                        disabled={isUserLoading || !!loadingProductId}
                     >
                         {loadingProductId === product.id ? (
                             <>
@@ -218,7 +266,7 @@ export function ProductList() {
       <Script
         src="https://app.sandbox.midtrans.com/snap/snap.js"
         data-client-key={process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY}
-        onLoad={() => setMidtransReady(true)}
+        strategy="beforeInteractive"
       />
       {renderContent()}
     </>

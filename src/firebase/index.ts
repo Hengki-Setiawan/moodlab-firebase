@@ -16,6 +16,5 @@ export function initializeFirebase(): { firebaseApp: FirebaseApp; auth: Auth; da
 
 export * from './provider';
 export * from './client-provider';
-export * from './rtdb/use-rtdb-list';
 export * from './errors';
 export * from './error-emitter';
