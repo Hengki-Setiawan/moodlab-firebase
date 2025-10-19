@@ -1,22 +1,25 @@
-
 import * as functions from "firebase-functions";
 import * as midtransClient from "midtrans-client";
 
+// This is the correct signature for firebase-functions v5 onCall handlers
 export const createMidtransTransaction = functions.https.onCall(
-  async (data, context) => {
-    if (!context.auth) {
+  async (request) => {
+    // The user's auth information is on request.auth
+    if (!request.auth) {
       throw new functions.https.HttpsError(
         "unauthenticated",
         "Anda harus login untuk melakukan transaksi.",
       );
     }
 
-    // Menggunakan cara baru: membaca dari environment variables
     const snap = new midtransClient.Snap({
       isProduction: false,
       serverKey: process.env.MIDTRANS_SERVER_KEY,
       clientKey: process.env.MIDTRANS_CLIENT_KEY,
     });
+
+    // The data sent from the client is on request.data
+    const data = request.data;
 
     const parameter = {
       transaction_details: {
@@ -32,13 +35,14 @@ export const createMidtransTransaction = functions.https.onCall(
         },
       ],
       customer_details: {
-        email: context.auth.token.email,
+        // The user's email is on request.auth.token
+        email: request.auth.token.email,
       },
     };
 
     try {
       const transaction = await snap.createTransaction(parameter);
-      return {token: transaction.token};
+      return { token: transaction.token };
     } catch (e: any) {
       functions.logger.error("Error creating Midtrans transaction:", e);
       throw new functions.https.HttpsError("internal", e.message);
