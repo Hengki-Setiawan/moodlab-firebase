@@ -5,6 +5,7 @@ import { Header } from "@/components/shared/header";
 import { Footer } from "@/components/shared/footer";
 import { Toaster } from "@/components/ui/toaster";
 import { FirebaseClientProvider } from "@/firebase/client-provider";
+import { CartProvider } from "@/hooks/use-cart";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -34,12 +35,16 @@ export default function RootLayout({
     <html lang="en" className={`${poppins.variable} ${inter.variable}`}>
       <body className="font-body antialiased flex flex-col min-h-screen">
         <FirebaseClientProvider>
-          <Header />
-          <main className="flex-grow">{children}</main>
-          <Footer />
-          <Toaster />
+          <CartProvider>
+            <Header />
+            <main className="flex-grow">{children}</main>
+            <Footer />
+            <Toaster />
+          </CartProvider>
         </FirebaseClientProvider>
       </body>
     </html>
   );
 }
+
+    

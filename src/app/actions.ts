@@ -2,13 +2,17 @@
 
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { addDoc, collection, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { initializeServerSideFirestore } from '@/firebase/server-init';
 import midtransclient from 'midtrans-client';
-import type { DigitalProduct } from '@/lib/types';
+import type { CartItem, Order } from '@/lib/types';
 import { createFirebaseAdminApp } from '@/firebase/server-admin-init';
 import { getAuth } from 'firebase-admin/auth';
 import { cookies } from 'next/headers';
+import { Resend } from 'resend';
+import { WelcomeEmail } from '@/emails/welcome-email';
+import { PurchaseConfirmationEmail } from '@/emails/purchase-confirmation-email';
+
 
 const contactSchema = z.object({
   name: z.string().min(2, 'Nama harus memiliki setidaknya 2 karakter.'),
@@ -69,13 +73,37 @@ export async function submitContactForm(prevState: ContactFormState, formData: F
   }
 }
 
+type CreateOrderState = {
+  orderId?: string;
+  error?: string;
+}
+
+export async function createOrder(items: CartItem[], totalAmount: number, userId: string): Promise<CreateOrderState> {
+  const { firestore } = initializeServerSideFirestore();
+  const ordersRef = collection(firestore, 'orders');
+
+  try {
+    const newOrderRef = await addDoc(ordersRef, {
+      userId,
+      items,
+      totalAmount,
+      status: 'pending',
+      createdAt: serverTimestamp(),
+    });
+    return { orderId: newOrderRef.id };
+  } catch (error) {
+    console.error("Error creating order:", error);
+    return { error: "Gagal membuat pesanan di database." };
+  }
+}
+
 
 type PaymentTokenState = {
   token?: string;
   error?: string;
 };
 
-export async function getPaymentToken(product: DigitalProduct, user: {id: string; name: string; email: string;}): Promise<PaymentTokenState> {
+export async function getPaymentToken(order: {id: string; totalAmount: number; items: CartItem[]}, user: {id: string; name: string; email: string;}): Promise<PaymentTokenState> {
   
   if (!process.env.MIDTRANS_SERVER_KEY) {
     console.error('MIDTRANS_SERVER_KEY is not set');
@@ -83,24 +111,23 @@ export async function getPaymentToken(product: DigitalProduct, user: {id: string
   }
 
   const snap = new midtransclient.Snap({
-    isProduction: false, // Set to true for production
+    isProduction: false,
     serverKey: process.env.MIDTRANS_SERVER_KEY,
   });
 
-  const orderId = `PRODUCT-${product.id}-${Date.now()}`;
+  const item_details = order.items.map(item => ({
+    id: item.id,
+    price: item.price,
+    quantity: item.quantity,
+    name: item.name,
+  }));
 
   const parameter = {
     transaction_details: {
-      order_id: orderId,
-      gross_amount: product.price,
+      order_id: order.id,
+      gross_amount: order.totalAmount,
     },
-    item_details: [{
-        id: product.id,
-        price: product.price,
-        quantity: 1,
-        name: product.name,
-        category: product.category,
-    }],
+    item_details,
     customer_details: {
       first_name: user.name,
       email: user.email,
@@ -110,11 +137,39 @@ export async function getPaymentToken(product: DigitalProduct, user: {id: string
   try {
     const transaction = await snap.createTransaction(parameter);
     const transactionToken = transaction.token;
-    console.log('transactionToken:', transactionToken);
     return { token: transactionToken };
   } catch (e: any) {
     console.error('Error creating Midtrans transaction:', e);
     return { error: `Gagal membuat transaksi: ${e.message}` };
+  }
+}
+
+export async function handleSuccessfulPayment(orderId: string, transactionResult: any) {
+  const { firestore } = initializeServerSideFirestore();
+  const orderRef = doc(firestore, 'orders', orderId);
+
+  try {
+    await updateDoc(orderRef, {
+      status: 'processed',
+      paymentDetails: transactionResult, // Save payment details from Midtrans
+    });
+
+    // Fetch the updated order to get user details for email
+    const orderDoc = await (await fetch(orderRef.path)).json();
+    const orderData = orderDoc.data as Order;
+    const userSnapshot = await getAuth().getUser(orderData.userId);
+
+    if (userSnapshot.email) {
+      await sendPurchaseConfirmationEmail(userSnapshot.displayName || 'Pengguna', userSnapshot.email, orderData, orderId);
+    }
+    
+    revalidatePath(`/akun/riwayat-pesanan/${orderId}`);
+    revalidatePath('/akun/riwayat-pesanan');
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error updating order status:", error);
+    return { success: false, error: "Gagal memperbarui status pesanan." };
   }
 }
 
@@ -168,3 +223,50 @@ export async function createSession(idToken: string) {
 export async function clearSession() {
   cookies().delete('__session');
 }
+
+
+// --- EMAIL ACTIONS ---
+const resendApiKey = process.env.RESEND_API_KEY;
+const fromEmail = process.env.EMAIL_FROM_ADDRESS || 'Mood Lab <onboarding@resend.dev>';
+
+export async function sendWelcomeEmail(name: string, email: string) {
+  if (!resendApiKey) {
+    console.warn("RESEND_API_KEY is not set. Skipping welcome email.");
+    return;
+  }
+  const resend = new Resend(resendApiKey);
+  try {
+    await resend.emails.send({
+      from: fromEmail,
+      to: email,
+      subject: 'Selamat Datang di Mood Lab!',
+      react: WelcomeEmail({ userName: name }),
+    });
+  } catch (error) {
+    console.error('Error sending welcome email:', error);
+  }
+}
+
+export async function sendPurchaseConfirmationEmail(name: string, email: string, order: Order, orderId: string) {
+   if (!resendApiKey) {
+    console.warn("RESEND_API_KEY is not set. Skipping purchase confirmation email.");
+    return;
+  }
+  const resend = new Resend(resendApiKey);
+  try {
+    await resend.emails.send({
+      from: fromEmail,
+      to: email,
+      subject: `Konfirmasi Pesanan Mood Lab #${orderId}`,
+      react: PurchaseConfirmationEmail({ 
+        userName: name, 
+        order,
+        orderId
+      }),
+    });
+  } catch (error) {
+    console.error('Error sending purchase confirmation email:', error);
+  }
+}
+
+    

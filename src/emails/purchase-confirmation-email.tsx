@@ -10,13 +10,15 @@ import {
   Section,
   Text,
   Link,
+  Row,
+  Column,
 } from '@react-email/components';
 import * as React from 'react';
-import type { DigitalProduct } from '@/lib/types';
+import type { Order } from '@/lib/types';
 
 interface PurchaseConfirmationEmailProps {
   userName: string;
-  product: DigitalProduct;
+  order: Order;
   orderId: string;
 }
 
@@ -78,6 +80,10 @@ const footer = {
   lineHeight: '16px',
 };
 
+const tableCell = {
+  padding: '8px 0',
+}
+
 const formatPrice = (price: number) => {
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
@@ -88,44 +94,86 @@ const formatPrice = (price: number) => {
 
 export const PurchaseConfirmationEmail = ({
   userName,
-  product,
+  order,
   orderId,
 }: PurchaseConfirmationEmailProps) => (
   <Html>
     <Head />
-    <Preview>Konfirmasi Pembelian Produk Digital Mood Lab</Preview>
+    <Preview>Konfirmasi Pembelian Mood Lab - Pesanan #{orderId}</Preview>
     <Body style={main}>
       <Container style={container}>
         <Section style={box}>
           <Text style={h1}>Mood Lab</Text>
-          <Heading as="h2" style={{ fontSize: '24px' }}>Terima kasih atas pembelian Anda, {userName}!</Heading>
+          <Heading as="h2" style={{ fontSize: '24px' }}>Terima kasih atas pesanan Anda, {userName}!</Heading>
           <Text style={paragraph}>
-            Kami telah menerima pembayaran Anda untuk produk digital berikut. Anda dapat mengakses atau mengunduh produk Anda kapan saja.
+            Pesanan Anda telah kami terima dan sedang kami proses. Berikut adalah detail pesanan Anda.
+          </Text>
+          <Text style={paragraph}>
+            ID Pesanan: <strong>#{orderId}</strong>
           </Text>
           <Hr style={hr} />
 
-          <Section style={{ marginBottom: '24px' }}>
-            <Img
-              src={product.imageUrl}
-              width="120"
-              height="90"
-              alt={product.name}
-              style={{ objectFit: 'cover', borderRadius: '4px', float: 'left', marginRight: '20px' }}
-            />
-            <Text style={{ ...paragraph, margin: 0, fontWeight: 'bold' }}>{product.name}</Text>
-            <Text style={{ ...paragraph, margin: '4px 0 0 0', fontSize: '14px' }}>{product.description}</Text>
+          {order.items.map((item) => (
+             <Section key={item.id} style={{ marginBottom: '16px' }}>
+              <Row>
+                <Column style={{ width: '64px' }}>
+                   <Img
+                      src={item.imageUrl}
+                      width="64"
+                      height="64"
+                      alt={item.name}
+                      style={{ objectFit: 'cover', borderRadius: '4px' }}
+                    />
+                </Column>
+                <Column style={{ paddingLeft: '16px', verticalAlign: 'top' }}>
+                   <Text style={{ ...paragraph, margin: 0, fontWeight: 'bold' }}>{item.name}</Text>
+                   <Text style={{ ...paragraph, margin: '4px 0 0 0', fontSize: '14px' }}>
+                    {item.quantity} x {formatPrice(item.price)}
+                  </Text>
+                </Column>
+                 <Column style={{ verticalAlign: 'top', textAlign: 'right' }}>
+                  <Text style={{...paragraph, margin: 0, fontWeight: 'bold' }}>{formatPrice(item.quantity * item.price)}</Text>
+                </Column>
+              </Row>
+          </Section>
+          ))}
+          
+          <Hr style={hr} />
+
+          <Section>
+            <Row>
+              <Column style={{...tableCell}}>
+                <Text style={{...paragraph, margin: 0}}>Subtotal</Text>
+              </Column>
+              <Column style={{...tableCell, textAlign: 'right'}}>
+                <Text style={{...paragraph, margin: 0}}>{formatPrice(order.totalAmount)}</Text>
+              </Column>
+            </Row>
+             <Row>
+              <Column style={{...tableCell}}>
+                <Text style={{...paragraph, margin: 0}}>Ongkos Kirim</Text>
+              </Column>
+              <Column style={{...tableCell, textAlign: 'right'}}>
+                <Text style={{...paragraph, margin: 0}}>{formatPrice(0)}</Text>
+              </Column>
+            </Row>
+            <Row>
+              <Column style={{...tableCell}}>
+                <Text style={{...paragraph, margin: 0, fontWeight: 'bold'}}>Total</Text>
+              </Column>
+              <Column style={{...tableCell, textAlign: 'right'}}>
+                <Text style={{...paragraph, margin: 0, fontWeight: 'bold'}}>{formatPrice(order.totalAmount)}</Text>
+              </Column>
+            </Row>
           </Section>
           
           <Hr style={hr} />
-          
+
           <Text style={paragraph}>
-            <strong>Detail Pesanan:</strong>
-          </Text>
-          <Text style={{...paragraph, margin: 0}}><strong>ID Pesanan:</strong> {orderId}</Text>
-          <Text style={{...paragraph, margin: 0}}><strong>Total Pembayaran:</strong> {formatPrice(product.price)}</Text>
-          
-          <Text style={paragraph}>
-            Jika Anda memiliki pertanyaan, jangan ragu untuk membalas email ini atau hubungi kami melalui halaman <Link style={anchor} href={`${baseUrl}/kontak`}>kontak kami</Link>.
+            Anda dapat melihat detail pesanan dan statusnya kapan saja melalui halaman{' '}
+            <Link style={anchor} href={`${baseUrl}/akun/riwayat-pesanan/${orderId}`}>
+              Riwayat Pesanan Anda
+            </Link>.
           </Text>
 
           <Text style={paragraph}>— Tim Mood Lab</Text>
@@ -140,3 +188,5 @@ export const PurchaseConfirmationEmail = ({
 );
 
 export default PurchaseConfirmationEmail;
+
+    

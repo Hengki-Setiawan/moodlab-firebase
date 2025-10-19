@@ -1,44 +1,83 @@
-
+/**
+ * @fileoverview Firestore Security Rules for Mood Lab.
+ *
+ * Core Philosophy: This ruleset provides public read access to all collections
+ * (digitalProducts, projects, contactSubmissions, and teamMembers), assuming
+ * all data is public-facing content. Write access is denied at the rules level,
+ * with the intention that writes will be handled securely via a backend (e.g., Cloud Functions).
+ *
+ * Data Structure: The Firestore database consists of four top-level collections:
+ * /digitalProducts/{digitalProductId}
+ * /projects/{projectId}
+ * /contactSubmissions/{contactSubmissionId}
+ * /teamMembers/{teamMemberId}
+ *
+ * Key Security Decisions:
+ * - Public read access is granted to all collections.
+ * - All write access (create, update, delete) is explicitly denied.
+ * - This configuration is suitable when writes are exclusively managed by a
+ *   trusted backend environment and not directly by client applications.
+ * - No data denormalization is needed as the rules are simple and don't rely
+ *   on complex authorization logic.
+ */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Allow public read for projects, products, and team members
+    /**
+     * @description Grants public read access to digital products, but denies all writes.
+     * @path /digitalProducts/{digitalProductId}
+     * @allow (get, list) Any user can read digital product information.
+     * @deny (create, update, delete) No user can create, update, or delete digital product information through direct client access.
+     * @principle Allows public reads, but restricts all writes, assuming a backend handles data modification.
+     */
+    match /digitalProducts/{digitalProductId} {
+      allow get, list: if true;
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    /**
+     * @description Grants public read access to projects, but denies all writes.
+     * @path /projects/{projectId}
+     * @allow (get, list) Any user can read project information.
+     * @deny (create, update, delete) No user can create, update, or delete project information through direct client access.
+     * @principle Allows public reads, but restricts all writes, assuming a backend handles data modification.
+     */
     match /projects/{projectId} {
-      allow read: if true;
-      allow write: if false;
+      allow get, list: if true;
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
     }
 
-    match /digitalProducts/{productId} {
-      allow read: if true;
-      allow write: if false;
+    /**
+     * @description Grants public read access to contact submissions, but denies all writes.
+     * @path /contactSubmissions/{contactSubmissionId}
+     * @allow (get, list) Any user can read contact submission information.
+     * @deny (create, update, delete) No user can create, update, or delete contact submission information through direct client access.
+     * @principle Allows public reads, but restricts all writes, assuming a backend handles data modification.
+     */
+    match /contactSubmissions/{contactSubmissionId} {
+      allow get, list: if true;
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
     }
 
-    match /teamMembers/{memberId} {
-      allow read: if true;
-      allow write: if false;
-    }
-
-    // Allow anyone to submit a contact form, but no one to read them
-    match /contactSubmissions/{submissionId} {
-      allow read: if false;
-      allow create: if true;
-      allow update, delete: if false;
-    }
-
-    // Rules for user orders
-    match /orders/{orderId} {
-      // Allow a user to create a new order document
-      allow create: if request.auth != null;
-
-      // Allow a user to read their own single order document
-      allow get: if request.auth != null && request.auth.uid == resource.data.userId;
-
-      // Allow a user to list/query their own orders, but not all orders
-      allow list: if request.auth != null && request.auth.uid == request.query.filters.userId;
-
-      // Nobody can update or delete an order from the client-side
-      allow update, delete: if false;
+    /**
+     * @description Grants public read access to team members, but denies all writes.
+     * @path /teamMembers/{teamMemberId}
+     * @allow (get, list) Any user can read team member information.
+     * @deny (create, update, delete) No user can create, update, or delete team member information through direct client access.
+     * @principle Allows public reads, but restricts all writes, assuming a backend handles data modification.
+     */
+    match /teamMembers/{teamMemberId} {
+      allow get, list: if true;
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
     }
   }
 }

@@ -1,22 +1,16 @@
 'use client';
 
 import Image from 'next/image';
-import { useState, useTransition, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { useFirestore, useCollection, useMemoFirebase, useUser } from '@/firebase';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query as firestoreQuery, type CollectionReference } from 'firebase/firestore';
 import type { DigitalProduct } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
-import { getPaymentToken } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
-import { useRouter } from 'next/navigation';
-
-declare global {
-  interface Window {
-    snap: any;
-  }
-}
+import { useCart } from '@/hooks/use-cart';
+import { ShoppingCart } from 'lucide-react';
 
 function ProductSkeleton() {
   return (
@@ -37,84 +31,34 @@ function ProductSkeleton() {
   );
 }
 
-function BuyButton({ product }: { product: DigitalProduct }) {
-    const [isPending, startTransition] = useTransition();
-    const { user, isUserLoading } = useUser();
+function AddToCartButton({ product }: { product: DigitalProduct }) {
+    const { addItem } = useCart();
     const { toast } = useToast();
-    const router = useRouter();
 
-    const handleBuy = () => {
-        if (!user || !user.email) {
-            toast({
-                title: "Anda Belum Login",
-                description: "Silakan login terlebih dahulu untuk melakukan pembelian.",
-                variant: "destructive"
-            });
-            router.push('/login');
-            return;
-        }
-
-        startTransition(async () => {
-            const userDetails = {
-                id: user.uid,
-                name: user.displayName || 'Pengguna',
-                email: user.email,
-            };
-            const { token, error } = await getPaymentToken(product, userDetails);
-
-            if (error) {
-                toast({
-                    title: "Pembayaran Gagal",
-                    description: error,
-                    variant: "destructive"
-                });
-                return;
-            }
-
-            if (token) {
-                window.snap.pay(token, {
-                    onSuccess: async function(result: any){
-                        console.log('success', result);
-                        toast({
-                            title: "Pembayaran Berhasil!",
-                            description: "Terima kasih atas pembelian Anda.",
-                        });
-                        
-                        router.push('/akun');
-                    },
-                    onPending: function(result: any){
-                        console.log('pending', result);
-                        toast({
-                            title: "Pembayaran Tertunda",
-                            description: "Menunggu pembayaran Anda selesai.",
-                        });
-                    },
-                    onError: function(result: any){
-                        console.log('error', result);
-                        toast({
-                            title: "Pembayaran Gagal",
-                            description: "Terjadi kesalahan saat memproses pembayaran.",
-                            variant: "destructive",
-                        });
-                    },
-                    onClose: function(){
-                        console.log('customer closed the popup without finishing the payment');
-                    }
-                });
-            }
+    const handleAddToCart = () => {
+        addItem({
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            quantity: 1,
+            imageUrl: product.imageUrl,
+        });
+        toast({
+            title: "Produk Ditambahkan",
+            description: `${product.name} telah ditambahkan ke keranjang.`,
         });
     };
 
     return (
-        <Button onClick={handleBuy} disabled={isPending || isUserLoading}>
-            {isPending ? 'Memproses...' : 'Beli Sekarang'}
+        <Button onClick={handleAddToCart}>
+            <ShoppingCart className="mr-2 h-4 w-4" />
+            Tambah
         </Button>
     )
 }
 
 export function ProductList() {
   const firestore = useFirestore();
-  const { toast } = useToast();
 
   const productsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -122,40 +66,6 @@ export function ProductList() {
   }, [firestore]);
 
   const { data: products, isLoading, error } = useCollection<DigitalProduct>(productsQuery);
-  
-  useEffect(() => {
-    const clientKey = process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY;
-    if (!clientKey) {
-        console.error("Midtrans client key is not set.");
-        toast({
-            title: "Konfigurasi Error",
-            description: "Kunci klien untuk pembayaran tidak ditemukan.",
-            variant: "destructive"
-        });
-        return;
-    }
-    
-    const scriptId = 'midtrans-snap-script';
-    let script = document.getElementById(scriptId) as HTMLScriptElement | null;
-
-    if (!script) {
-        script = document.createElement('script');
-        script.id = scriptId;
-        script.src = "https://app.sandbox.midtrans.com/snap/snap.js"; // Use sandbox for development
-        script.setAttribute('data-client-key', clientKey);
-        script.async = true;
-        document.body.appendChild(script);
-    }
-    
-    return () => {
-      // Cleanup script if component unmounts
-      if (script && script.parentNode) {
-        // It's often better to leave the script loaded, but this is an option
-        // script.parentNode.removeChild(script); 
-      }
-    }
-  }, [toast]);
-
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('id-ID', {
@@ -218,10 +128,12 @@ export function ProductList() {
           </CardContent>
           <CardFooter className="flex justify-between items-center pt-4">
             <p className="font-semibold text-lg">{formatPrice(product.price)}</p>
-            <BuyButton product={product} />
+            <AddToCartButton product={product} />
           </CardFooter>
         </Card>
       ))}
     </div>
   );
 }
+
+    

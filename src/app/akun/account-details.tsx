@@ -11,6 +11,7 @@ import { useAuth } from '@/firebase';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Terminal } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { clearSession } from '../actions';
 
 function AccountSkeleton() {
     return (
@@ -77,6 +78,7 @@ export function AccountDetails() {
   const handleLogout = async () => {
     try {
       await signOut(auth);
+      await clearSession();
       router.push('/'); 
     } catch (error) {
       console.error("Error signing out: ", error);
@@ -143,3 +145,5 @@ export function AccountDetails() {
     </>
   );
 }
+
+    
