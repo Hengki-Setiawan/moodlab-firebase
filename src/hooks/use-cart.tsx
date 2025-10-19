@@ -24,26 +24,32 @@ export function useCart() {
 }
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [items, setItems] = useState<CartItem[]>(() => {
-    if (typeof window === 'undefined') {
-      return [];
-    }
+  const [items, setItems] = useState<CartItem[]>([]);
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Effect to load cart from localStorage on client-side mount
+  useEffect(() => {
+    setIsMounted(true);
     try {
       const storedItems = window.localStorage.getItem('cart');
-      return storedItems ? JSON.parse(storedItems) : [];
+      if (storedItems) {
+        setItems(JSON.parse(storedItems));
+      }
     } catch (error) {
       console.error('Error reading cart from localStorage', error);
-      return [];
     }
-  });
+  }, []);
 
+  // Effect to save cart to localStorage whenever it changes
   useEffect(() => {
-    try {
-      window.localStorage.setItem('cart', JSON.stringify(items));
-    } catch (error) {
-      console.error('Error writing cart to localStorage', error);
+    if (isMounted) {
+      try {
+        window.localStorage.setItem('cart', JSON.stringify(items));
+      } catch (error) {
+        console.error('Error writing cart to localStorage', error);
+      }
     }
-  }, [items]);
+  }, [items, isMounted]);
 
   const addItem = (item: CartItem) => {
     setItems((prevItems) => {
@@ -91,8 +97,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
     totalItems,
     totalPrice,
   };
+  
+  if (!isMounted) {
+      // On the server and during initial client render, don't show the count
+      const emptyValue = { ...value, items: [], totalItems: 0, totalPrice: 0 };
+      return <CartContext.Provider value={emptyValue}>{children}</CartContext.Provider>;
+  }
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }
-
-    
