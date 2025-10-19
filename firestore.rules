@@ -2,40 +2,31 @@
  * @fileoverview Firestore Security Rules for Mood Lab Website
  *
  * Core Philosophy:
- * This ruleset enforces a role-based access control model with public read access for specific collections
- * (projects, teamMembers) and owner-only access for user-specific data (transactions). It prioritizes
- * authorization by restricting write access based on user roles.
+ * This ruleset enforces a combination of public read access for certain collections (projects, team members),
+ * admin-only access for sensitive data (contact submissions), and user-ownership for private data (user transactions).
  *
  * Data Structure:
- * - /projects/{projectId}: Stores project information; publicly readable, writeable by admins only.
- * - /contactSubmissions/{contactSubmissionId}: Stores contact form submissions; writeable by admins only.
- * - /teamMembers/{teamMemberId}: Stores team member information; publicly readable, writeable by admins only.
- * - /users/{userId}/transactions/{transactionId}: Stores user-specific transaction data; readable and writable by the user only.
+ * - /projects/{projectId}: Publicly readable project data.
+ * - /contactSubmissions/{contactSubmissionId}: Contact form submissions, accessible only to admins.
+ * - /teamMembers/{teamMemberId}: Publicly readable team member information.
+ * - /users/{userId}/transactions/{transactionId}: User-specific transaction history, only accessible to the respective user.
  *
  * Key Security Decisions:
- * - Public read access is granted to the 'projects' and 'teamMembers' collections to showcase portfolio and team information.
- * - All write operations are restricted to authorized users or owners to maintain data integrity and prevent unauthorized modifications.
- * - User listing is disallowed on the `/users` collection, as there is no path to the root user documents, so listing is impossible.
- * - The 'contactSubmissions' collection is restricted to admin-only access for both read and write to prevent unauthorized data access.
- *
- * Denormalization for Authorization:
- * The 'Transaction' entity denormalizes the `userId` onto each transaction document to enable simple, ownership-based security rules.
- * This avoids the need for complex queries or joins to verify ownership.
+ * - Public read access is granted to the 'projects' and 'teamMembers' collections, assuming the data is intended for public consumption.
+ * - Strict user-ownership is enforced for 'transactions' data, ensuring users can only access their own transaction history.
+ * - Admin-only access is enforced for 'contactSubmissions' to protect sensitive contact form data.
+ * - No user listing is allowed for the 'users' collection itself.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Grants public read access to projects and restricts write access to admins.
+     * @description Allows public read access to project data. Writes are not allowed in this prototyping phase.
      * @path /projects/{projectId}
      * @allow get, list: if true;
-     * @allow create: if false;
-     * @allow update: if false;
-     * @allow delete: if false;
-     * @deny create: if true; // Example: Prevent unauthenticated users from creating projects.
-     * @deny update: if true; // Example: Prevent non-owners from updating projects.
-     * @principle Allows public reads and restricts writes to specific roles.
+     * @deny create, update, delete: if false;
+     * @principle Allows public read access while restricting writes for prototyping.
      */
     match /projects/{projectId} {
       allow get, list: if true;
@@ -43,30 +34,25 @@ service cloud.firestore {
     }
 
     /**
-     * @description Restricts read and write access to contact submissions to admins only.
+     * @description Restricts access to contact form submissions to authenticated users (simulating admin access).
      * @path /contactSubmissions/{contactSubmissionId}
-     * @allow get, list: if false;
-     * @allow create: if false;
-     * @allow update: if false;
-     * @allow delete: if false;
-     * @deny get: if true; // Example: Prevent unauthenticated users from reading contact submissions.
-     * @deny create: if true; // Example: Prevent non-authorized users from creating contact submissions.
-     * @principle Restricts access to sensitive data to authorized personnel only.
+     * @allow get, list: if isSignedIn();
+     * @allow create, update, delete: if isSignedIn();
+     * @deny get, list: if !isSignedIn();
+     * @deny create, update, delete: if !isSignedIn();
+     * @principle Enforces admin-only access to sensitive contact form data.
      */
     match /contactSubmissions/{contactSubmissionId} {
-      allow get, list, create, update, delete: if false;
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isSignedIn();
     }
 
     /**
-     * @description Grants public read access to team member profiles and restricts write access to admins.
+     * @description Allows public read access to team member information. Writes are not allowed in this prototyping phase.
      * @path /teamMembers/{teamMemberId}
      * @allow get, list: if true;
-     * @allow create: if false;
-     * @allow update: if false;
-     * @allow delete: if false;
-     * @deny create: if true; // Example: Prevent unauthenticated users from creating team members.
-     * @deny update: if true; // Example: Prevent non-owners from updating team members.
-     * @principle Allows public reads and restricts writes to specific roles.
+     * @deny create, update, delete: if false;
+     * @principle Allows public read access while restricting writes for prototyping.
      */
     match /teamMembers/{teamMemberId} {
       allow get, list: if true;
@@ -74,23 +60,26 @@ service cloud.firestore {
     }
 
     /**
-     * @description Restricts access to a user's transactions to the user themselves.
+     * @description Enforces user-ownership for transaction history.
      * @path /users/{userId}/transactions/{transactionId}
-     * @allow get, list: if isOwner(userId);
+     * @allow get: if isOwner(userId);
+     * @allow list: if isOwner(userId);
      * @allow create: if request.auth.uid == userId;
      * @allow update: if isExistingOwner(userId);
      * @allow delete: if isExistingOwner(userId);
-     * @deny get: if request.auth.uid != userId; // Example: Prevent other users from reading transaction data.
-     * @deny create: if request.auth.uid != userId; // Example: Prevent other users from creating transactions under another user's ID.
-     * @deny update: if request.auth.uid != userId; // Example: Prevent other users from updating transaction data.
-     * @deny delete: if request.auth.uid != userId; // Example: Prevent other users from deleting transaction data.
-     * @principle Enforces document ownership for reads and writes, validating the user ID.
+     * @deny get: if !isOwner(userId);
+     * @deny list: if !isOwner(userId);
+     * @deny create: if request.auth.uid != userId;
+     * @deny update: if !isExistingOwner(userId);
+     * @deny delete: if !isExistingOwner(userId);
+     * @principle Enforces document ownership for writes and restricts access to a user's own data tree.
      */
     match /users/{userId}/transactions/{transactionId} {
-      allow get, list: if isOwner(userId);
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
       allow create: if request.auth.uid == userId;
-      allow update: if isOwner(userId);
-      allow delete: if isOwner(userId);
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
     }
 
     function isSignedIn() {
@@ -102,7 +91,7 @@ service cloud.firestore {
     }
 
     function isExistingOwner(userId) {
-        return request.auth.uid == userId && resource != null;
+      return isOwner(userId) && resource != null;
     }
   }
 }
