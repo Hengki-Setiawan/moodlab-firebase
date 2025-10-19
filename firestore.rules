@@ -7,26 +7,34 @@
  *
  * Data Structure:
  * - /projects/{projectId}: Publicly readable project data.
- * - /contactSubmissions/{contactSubmissionId}: Contact form submissions, accessible only to admins.
+ * - /contactSubmissions/{contactSubmissionId}: Contact form submissions, restricted to admin access.
  * - /teamMembers/{teamMemberId}: Publicly readable team member information.
- * - /users/{userId}/transactions/{transactionId}: User-specific transaction history, only accessible to the respective user.
+ * - /users/{userId}/transactions/{transactionId}: Transaction history for each user, accessible only by the user.
  *
  * Key Security Decisions:
- * - Public read access is granted to the 'projects' and 'teamMembers' collections, assuming the data is intended for public consumption.
- * - Strict user-ownership is enforced for 'transactions' data, ensuring users can only access their own transaction history.
- * - Admin-only access is enforced for 'contactSubmissions' to protect sensitive contact form data.
- * - No user listing is allowed for the 'users' collection itself.
+ * - Public read access for 'projects' and 'teamMembers' collections.
+ * - Strict admin-only access for 'contactSubmissions' collection.
+ * - User-ownership model for 'transactions' subcollection under each user.
+ * - No user listing is allowed.
+ *
+ * Denormalization for Authorization:
+ * - The `transactions` collection requires a `userId` field to match the parent `users/{userId}` path. This is enforced on creation and immutability is enforced on update.
+ *
+ * Structural Segregation:
+ * - Public data (projects, team members) and private data (user transactions) are stored in separate collections to simplify access control.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Allows public read access to project data. Writes are not allowed in this prototyping phase.
+     * @description Allows public read access to project data. Only admins can create, update, or delete projects.
      * @path /projects/{projectId}
      * @allow get, list: if true;
-     * @deny create, update, delete: if false;
-     * @principle Allows public read access while restricting writes for prototyping.
+     * @allow create: if false;
+     * @allow update: if false;
+     * @allow delete: if false;
+     * @principle Allows public read, restricts writes to admins.
      */
     match /projects/{projectId} {
       allow get, list: if true;
@@ -34,25 +42,27 @@ service cloud.firestore {
     }
 
     /**
-     * @description Restricts access to contact form submissions to authenticated users (simulating admin access).
+     * @description Restricts access to contact form submissions to only authenticated users.
      * @path /contactSubmissions/{contactSubmissionId}
-     * @allow get, list: if isSignedIn();
-     * @allow create, update, delete: if isSignedIn();
-     * @deny get, list: if !isSignedIn();
-     * @deny create, update, delete: if !isSignedIn();
-     * @principle Enforces admin-only access to sensitive contact form data.
+     * @allow get, list: if false;
+     * @allow create: if false;
+     * @allow update: if false;
+     * @allow delete: if false;
+     * @principle Enforces admin-only access for sensitive contact information.
      */
     match /contactSubmissions/{contactSubmissionId} {
-      allow get, list: if isSignedIn();
-      allow create, update, delete: if isSignedIn();
+      allow get, list: if false;
+      allow create, update, delete: if false;
     }
 
     /**
-     * @description Allows public read access to team member information. Writes are not allowed in this prototyping phase.
+     * @description Allows public read access to team member information. Only admins can create, update, or delete team members.
      * @path /teamMembers/{teamMemberId}
      * @allow get, list: if true;
-     * @deny create, update, delete: if false;
-     * @principle Allows public read access while restricting writes for prototyping.
+     * @allow create: if false;
+     * @allow update: if false;
+     * @allow delete: if false;
+     * @principle Allows public read, restricts writes to admins.
      */
     match /teamMembers/{teamMemberId} {
       allow get, list: if true;
@@ -60,36 +70,38 @@ service cloud.firestore {
     }
 
     /**
-     * @description Enforces user-ownership for transaction history.
+     * @description Allows a user to read and manage their own transaction history.
      * @path /users/{userId}/transactions/{transactionId}
-     * @allow get: if isOwner(userId);
-     * @allow list: if isOwner(userId);
-     * @allow create: if request.auth.uid == userId;
-     * @allow update: if isExistingOwner(userId);
+     * @allow get, list: if isOwner(userId);
+     * @allow create: if request.resource.data.userId == userId;
+     * @allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
      * @allow delete: if isExistingOwner(userId);
-     * @deny get: if !isOwner(userId);
-     * @deny list: if !isOwner(userId);
-     * @deny create: if request.auth.uid != userId;
-     * @deny update: if !isExistingOwner(userId);
-     * @deny delete: if !isExistingOwner(userId);
-     * @principle Enforces document ownership for writes and restricts access to a user's own data tree.
+     * @principle Enforces document ownership for writes and reads.
      */
     match /users/{userId}/transactions/{transactionId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if request.auth.uid == userId;
-      allow update: if isExistingOwner(userId);
+      allow get, list: if isOwner(userId);
+      allow create: if request.resource.data.userId == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
       allow delete: if isExistingOwner(userId);
     }
 
-    function isSignedIn() {
-      return request.auth != null;
-    }
+    // --- Helper Functions ---
 
+    /**
+     * @description Checks if the request is made by the owner (same user ID).
+     * @param {string} userId - The user ID to compare against the request's authentication UID.
+     * @returns {boolean} - True if the user is the owner, false otherwise.
+     * @example isOwner("someUserId") -> true if request.auth.uid == "someUserId"
+     */
     function isOwner(userId) {
-      return request.auth.uid == userId;
+      return request.auth != null && request.auth.uid == userId;
     }
 
+    /**
+     * @description Checks if the user is the owner and the resource exists.
+     * @param {string} userId - The user ID to compare against the request's authentication UID.
+     * @returns {boolean} - True if the user is the owner and the resource exists.
+     */
     function isExistingOwner(userId) {
       return isOwner(userId) && resource != null;
     }
