@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useFirestore, useCollection, useMemoFirebase, useUser } from '@/firebase';
@@ -39,12 +39,22 @@ export function ProductList() {
   const router = useRouter();
   const [isBuying, setIsBuying] = useState<string | null>(null);
 
-  const productsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return firestoreQuery(collection(firestore, 'digitalProducts')) as CollectionReference<DigitalProduct>;
-  }, [firestore]);
+  // Load Midtrans Snap.js script
+  useEffect(() => {
+    const snapScript = "https://app.sandbox.midtrans.com/snap/snap.js";
+    const clientKey = "Mid-client-35fgBhK8ianqJP3d";
 
-  const { data: products, isLoading, error } = useCollection<DigitalProduct>(productsQuery);
+    const script = document.createElement('script');
+    script.src = snapScript;
+    script.setAttribute('data-client-key', clientKey);
+    script.async = true;
+
+    document.body.appendChild(script);
+
+    return () => {
+      document.body.removeChild(script);
+    }
+  }, []);
 
   const handleBuy = async (product: DigitalProduct) => {
     if (!user) {
@@ -68,9 +78,50 @@ export function ProductList() {
         });
 
         const transaction = await response.json();
-
+        
         if (response.ok) {
-            window.location.href = transaction.redirect_url;
+            // Because we are using Core API, we don't get a redirect_url.
+            // Instead, we get a token that we can use with Snap.js to pay.
+            // The response 'transaction' object from our API is the full response from Midtrans.
+             if (transaction.token) {
+                (window as any).snap.pay(transaction.token, {
+                    onSuccess: function(result: any){
+                        router.push(`/pembayaran/selesai?order_id=${result.order_id}`);
+                    },
+                    onPending: function(result: any){
+                        // For Gopay, pending means waiting for payment. Redirect to status page.
+                        // You might want to create a specific pending page.
+                        router.push(`/akun/riwayat-pesanan`);
+                    },
+                    onError: function(result: any){
+                         router.push(`/pembayaran/gagal?order_id=${result.order_id}`);
+                    },
+                    onClose: function(){
+                        toast({
+                            title: "Pembayaran Dibatalkan",
+                            description: "Anda menutup jendela pembayaran sebelum selesai.",
+                            variant: "destructive"
+                        });
+                    }
+                });
+            } else if (transaction.actions) {
+                 // Handle payments like Gopay QR which provide actions instead of a token
+                 const gopayQrUrl = transaction.actions.find((action: {name: string}) => action.name === 'generate-qr-code')?.url;
+                 if (gopayQrUrl) {
+                     // For QRIS, you might want to show a modal with the QR code
+                     // For simplicity, we'll just log it. A real app would show the QR.
+                     console.log("Gopay QR URL:", gopayQrUrl);
+                     toast({
+                         title: "Pindai Kode QR",
+                         description: "Silakan pindai kode QR dengan aplikasi Gojek Anda.",
+                     });
+                     // Here you would typically show a modal with an iframe or QR image
+                 } else {
+                    throw new Error('Metode pembayaran tidak didukung saat ini.');
+                 }
+            } else {
+                 throw new Error(transaction.status_message || 'Respons tidak valid dari server.');
+            }
         } else {
             throw new Error(transaction.error || 'Gagal membuat transaksi.');
         }

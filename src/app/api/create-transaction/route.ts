@@ -12,13 +12,10 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Data produk atau pengguna tidak lengkap' }, { status: 400 });
         }
         
-        // Buat ID pesanan unik hanya untuk Midtrans, tanpa menyimpan ke DB dulu
         const orderId = `moodlab-${randomUUID()}`;
 
-        // Siapkan parameter untuk Midtrans
-        // Untuk CoreApi, kita perlu menentukan tipe pembayaran secara eksplisit
         const parameter = {
-            payment_type: 'gopay', // Contoh: gopay, bisa juga 'bank_transfer', 'echannel', dll.
+            payment_type: 'gopay',
             transaction_details: {
                 order_id: orderId,
                 gross_amount: product.price,
@@ -33,27 +30,32 @@ export async function POST(request: Request) {
             customer_details: {
                 first_name: user.displayName || user.email?.split('@')[0],
                 email: user.email,
-                phone: user.phoneNumber || undefined, // Gunakan undefined jika null
+                phone: user.phoneNumber || undefined,
             },
+            // This part is crucial for some payment methods like GoPay from Core API
+            gopay: {
+                enable_callback: true,
+                callback_url: `https://moodlab.id/pembayaran/notifikasi` // Replace with your actual domain
+            }
         };
 
-        // Buat transaksi Midtrans menggunakan CoreApi.charge()
+        // For Core API, we use coreApi.charge()
         const transaction = await coreApi.charge(parameter);
 
-        // Jika Midtrans berhasil, kembalikan responsnya
-        // Respons CoreAPI berbeda, tidak ada redirect_url secara langsung
-        // Anda perlu mengembalikan informasi yang relevan agar klien bisa menindaklanjuti
+        // Core API response for Gopay doesn't give a redirect_url.
+        // It gives `actions` array with a `generate-qr-code` URL.
+        // We will send the whole transaction object back to the client.
+        // The client will then decide how to display the payment instructions.
         return NextResponse.json(transaction);
 
     } catch (error: any) {
-        console.error('Error creating transaction:', error);
+        console.error('Error creating transaction:', error.message || error);
         
         let errorMessage = 'Terjadi kesalahan pada server saat membuat transaksi.';
-        // Tangani error dari Midtrans secara spesifik
-        if (error.isMidtransError) {
-             console.error('Midtrans API Error:', error.message);
-             // Error.message dari midtrans-client sudah cukup deskriptif
-             errorMessage = error.message;
+        // Handle specific Midtrans error
+        if (error.ApiResponse) {
+             console.error('Midtrans API Error:', error.ApiResponse);
+             errorMessage = error.ApiResponse.status_message || 'Gagal berkomunikasi dengan Midtrans.';
         } else if (error.message) {
             errorMessage = error.message;
         }
