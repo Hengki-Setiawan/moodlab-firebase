@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { snap } from '@/lib/midtrans';
+import { coreApi } from '@/lib/midtrans';
 import type { DigitalProduct } from '@/lib/types';
 import type { User } from 'firebase/auth';
 import { randomUUID } from 'crypto';
@@ -17,6 +17,7 @@ export async function POST(request: Request) {
 
         // Siapkan parameter untuk Midtrans
         const parameter = {
+            payment_type: 'snap', // Menentukan bahwa kita ingin menggunakan Snap UI
             transaction_details: {
                 order_id: orderId,
                 gross_amount: product.price,
@@ -31,17 +32,12 @@ export async function POST(request: Request) {
             customer_details: {
                 first_name: user.displayName || user.email?.split('@')[0],
                 email: user.email,
-                phone: user.phoneNumber,
+                phone: user.phoneNumber || undefined, // Gunakan undefined jika null
             },
-            callbacks: {
-                finish: `${request.headers.get('origin')}/pembayaran/selesai?order_id=${orderId}`,
-                error: `${request.headers.get('origin')}/pembayaran/gagal?order_id=${orderId}`,
-                pending: `${request.headers.get('origin')}/pembayaran/pending?order_id=${orderId}`
-            }
         };
 
-        // Langsung buat transaksi Midtrans
-        const transaction = await snap.createTransaction(parameter);
+        // Buat transaksi Midtrans menggunakan CoreApi
+        const transaction = await coreApi.createTransaction(parameter);
 
         // Jika Midtrans berhasil, kembalikan responsnya
         if (transaction.token && transaction.redirect_url) {
@@ -55,9 +51,11 @@ export async function POST(request: Request) {
         console.error('Error creating transaction:', error);
         
         let errorMessage = 'Terjadi kesalahan pada server saat membuat transaksi.';
-        if (error.response && error.response.data) {
-             console.error('Midtrans API Error:', error.response.data);
-             errorMessage = error.response.data.error_messages ? error.response.data.error_messages.join(', ') : errorMessage;
+        // Tangani error dari Midtrans secara spesifik
+        if (error.isMidtransError) {
+             console.error('Midtrans API Error:', error.message);
+             // Error.message dari midtrans-client sudah cukup deskriptif
+             errorMessage = error.message;
         } else if (error.message) {
             errorMessage = error.message;
         }
