@@ -2,13 +2,13 @@
 
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
-import { initializeServerSideFirestore } from '@/firebase/server-init';
+import { addDoc, collection, serverTimestamp, FieldValue } from 'firebase/firestore';
 import { createFirebaseAdminApp } from '@/firebase/server-admin-init';
 import { getAuth } from 'firebase-admin/auth';
 import { cookies } from 'next/headers';
-import { Resend } from 'resend';
-import { WelcomeEmail } from '@/emails/welcome-email';
+import { getFirestore } from 'firebase-admin/firestore';
+import type { Order } from '@/lib/types';
+
 
 const contactSchema = z.object({
   name: z.string().min(2, 'Nama harus memiliki setidaknya 2 karakter.'),
@@ -45,13 +45,14 @@ export async function submitContactForm(prevState: ContactFormState, formData: F
   const { companyName, ...restOfData } = validatedFields.data;
 
   try {
-    const { firestore } = initializeServerSideFirestore();
+    const adminApp = createFirebaseAdminApp();
+    const firestore = getFirestore(adminApp);
     const contactSubmissionsRef = collection(firestore, 'contactSubmissions');
     
     await addDoc(contactSubmissionsRef, {
       ...restOfData,
       companyName: companyName || '',
-      submissionDate: serverTimestamp(),
+      submissionDate: FieldValue.serverTimestamp(),
     });
     
     revalidatePath('/kontak');
@@ -118,27 +119,4 @@ export async function createSession(idToken: string) {
 
 export async function clearSession() {
   cookies().delete('__session');
-}
-
-
-// --- EMAIL ACTIONS ---
-const resendApiKey = process.env.RESEND_API_KEY;
-const fromEmail = process.env.EMAIL_FROM_ADDRESS || 'Mood Lab <onboarding@resend.dev>';
-
-export async function sendWelcomeEmail(name: string, email: string) {
-  if (!resendApiKey) {
-    console.warn("RESEND_API_KEY is not set. Skipping welcome email.");
-    return;
-  }
-  const resend = new Resend(resendApiKey);
-  try {
-    await resend.emails.send({
-      from: fromEmail,
-      to: email,
-      subject: 'Selamat Datang di Mood Lab!',
-      react: WelcomeEmail({ userName: name }),
-    });
-  } catch (error) {
-    console.error('Error sending welcome email:', error);
-  }
 }
