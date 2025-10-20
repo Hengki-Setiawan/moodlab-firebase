@@ -1,16 +1,17 @@
 import midtransClient from 'midtrans-client';
 
+// Ambil server key dari environment variables.
 const serverKey = process.env.MIDTRANS_SERVER_KEY;
-const clientKey = process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY;
 
-if (!serverKey || !clientKey) {
-  // We still check for both to ensure they are set, but only use serverKey for Snap backend instance.
-  console.warn('Midtrans server key or client key might not be set in environment variables.');
+// Validasi bahwa server key ada.
+if (!serverKey) {
+  console.warn('Peringatan: MIDTRANS_SERVER_KEY tidak diatur di environment variables.');
 }
 
+// Buat instance baru dari Midtrans Snap client.
+// 'isProduction' diatur ke false untuk lingkungan pengembangan/sandbox.
+// Ganti menjadi true saat aplikasi Anda siap untuk transaksi live.
 export const snap = new midtransClient.Snap({
-  isProduction: false, // Set to true for production
+  isProduction: false,
   serverKey: serverKey,
-  // clientKey is not needed for server-side Snap instance creation.
-  // Including it can sometimes cause auth issues depending on the library version and context.
 });
