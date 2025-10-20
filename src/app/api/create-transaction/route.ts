@@ -16,8 +16,9 @@ export async function POST(request: Request) {
         const orderId = `moodlab-${randomUUID()}`;
 
         // Siapkan parameter untuk Midtrans
+        // Untuk CoreApi, kita perlu menentukan tipe pembayaran secara eksplisit
         const parameter = {
-            payment_type: 'snap', // Menentukan bahwa kita ingin menggunakan Snap UI
+            payment_type: 'gopay', // Contoh: gopay, bisa juga 'bank_transfer', 'echannel', dll.
             transaction_details: {
                 order_id: orderId,
                 gross_amount: product.price,
@@ -36,16 +37,13 @@ export async function POST(request: Request) {
             },
         };
 
-        // Buat transaksi Midtrans menggunakan CoreApi
-        const transaction = await coreApi.createTransaction(parameter);
+        // Buat transaksi Midtrans menggunakan CoreApi.charge()
+        const transaction = await coreApi.charge(parameter);
 
         // Jika Midtrans berhasil, kembalikan responsnya
-        if (transaction.token && transaction.redirect_url) {
-            return NextResponse.json(transaction);
-        } else {
-             // Jika Midtrans gagal, lemparkan error
-             throw new Error('Gagal membuat token transaksi Midtrans.');
-        }
+        // Respons CoreAPI berbeda, tidak ada redirect_url secara langsung
+        // Anda perlu mengembalikan informasi yang relevan agar klien bisa menindaklanjuti
+        return NextResponse.json(transaction);
 
     } catch (error: any) {
         console.error('Error creating transaction:', error);
